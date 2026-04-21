@@ -178,6 +178,7 @@ class _PreventivePageState extends State<PreventivePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: Colors.redAccent, // Kór matak FIXOM
         title: const Text(
           "Form Preventive",

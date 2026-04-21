@@ -111,6 +111,7 @@ class _CorrectivePageState extends State<CorrectivePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Corrective (Gangguan)",
           style: TextStyle(color: Colors.white),

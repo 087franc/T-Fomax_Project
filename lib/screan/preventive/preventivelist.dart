@@ -49,9 +49,13 @@ class PreventiveListPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text("List Ticket Preventive"),
-        backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          "List Ticket Preventive",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color.fromRGBO(255, 82, 82, 1),
+        foregroundColor: Colors.white,
         elevation: 1,
       ),
       body: ListView.builder(

@@ -11,6 +11,7 @@ import 'screan/potensi_pengukuran.dart';
 import 'screan/alker_sarkel.dart';
 import 'screan/projectteam.dart';
 import 'screan/preventive/preventivepage.dart';
+import 'login_page.dart';
 
 class MainDashboardPage extends StatelessWidget {
   const MainDashboardPage({super.key});
@@ -53,6 +54,7 @@ class MainDashboardPage extends StatelessWidget {
       backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         backgroundColor: Colors.redAccent,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -64,7 +66,7 @@ class MainDashboardPage extends StatelessWidget {
               backgroundColor: Colors.white,
               child: Image.asset(
                 'img/T-Fomax.png',
-                width: 30,
+                width: 20,
                 height: 30,
                 fit: BoxFit.cover,
               ),
@@ -105,6 +107,16 @@ class MainDashboardPage extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -114,10 +126,12 @@ class MainDashboardPage extends StatelessWidget {
           Opacity(
             opacity: 0.3,
             child: Container(
+              width: double.infinity,
+              height: double.infinity,
               decoration: const BoxDecoration(
                 image: DecorationImage(
                   image: AssetImage('img/telkomcel.jpg'),
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 ),
               ),
             ),

@@ -24,7 +24,7 @@ class _OTPPageState extends State<OTPPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://localhost:8080/verify-otp"),
+        Uri.parse("http://172.20.222.82:8080/verify-otp"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"username": widget.username, "otp": otpCtrl.text}),
       );
@@ -57,8 +57,11 @@ class _OTPPageState extends State<OTPPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 236, 235, 233),
-      appBar: AppBar(title: Text("Verifika OTP"), backgroundColor: Colors.blue),
+      backgroundColor: const Color.fromARGB(255, 221, 219, 215),
+      appBar: AppBar(
+        title: Text("Verifika OTP", style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent,
+      ),
       body: Center(
         child: Padding(
           padding: EdgeInsets.only(top: 200, left: 50, right: 50),
