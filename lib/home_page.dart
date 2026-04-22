@@ -1,17 +1,20 @@
 // --- DASHBOARD PAGE ---
 import 'package:flutter/material.dart';
-// // import 'dart:convert';xa
-// // import 'preventive.dart';
-// // import 'screan/form_aumenta_laporan.dart';
-import 'screan/proactive.dart';
-import 'screan/presensi.dart';
+import 'screan/proactive/proactive.dart';
+import 'screan/presensi/presensi.dart';
 import 'screan/corrective/corective.dart';
-import 'screan/potensi_pengukuran.dart';
+import 'screan/potensi&pengukuran/potensi_pengukuran.dart';
 // import 'preventivepage.dart';
-import 'screan/alker_sarkel.dart';
-import 'screan/projectteam.dart';
+import 'screan/alker&sarkel/alker_sarkel.dart';
+import 'screan/project_team/projectteam.dart';
 import 'screan/preventive/preventivepage.dart';
 import 'login_page.dart';
+import 'about_page.dart';
+import 'profile.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:http/http.dart' as http;
 
 class MainDashboardPage extends StatelessWidget {
   const MainDashboardPage({super.key});
@@ -62,13 +65,22 @@ class MainDashboardPage extends StatelessWidget {
               "T-FOMAX Dashboard",
               style: TextStyle(color: Colors.white),
             ),
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Image.asset(
-                'img/T-Fomax.png',
-                width: 20,
-                height: 30,
-                fit: BoxFit.cover,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.white,
+                child: Image.asset(
+                  'img/profile.jpg',
+                  width: 25,
+                  height: 30,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ],
@@ -108,9 +120,44 @@ class MainDashboardPage extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
+              leading: const Icon(Icons.info),
+              title: const Text('About Us'),
               onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Termina Sesaun'),
+              onTap: () {
+                //get session_id from shared preferences
+                Future<String?> getSessionId() async {
+                  final prefs = await SharedPreferences.getInstance();
+                  return prefs.getString('session_id');
+                }
+
+                Future<void> deleteData() async {
+                  final url = Uri.parse(
+                    'http://172.20.222.97:3000/api/v1/user-sessions/${await getSessionId()}',
+                  );
+
+                  final response = await http.delete(
+                    url,
+                    headers: {'Content-Type': 'application/json'},
+                  );
+
+                  if (response.statusCode == 200 ||
+                      response.statusCode == 204) {
+                    print('Data berhasil dihapus');
+                  } else {
+                    print('Gagal hapus data: ${response.statusCode}');
+                  }
+                }
+
+                deleteData();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginPage()),

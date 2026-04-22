@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/database_helper.dart';
 // import 'package:geolocator/geolocator.dart';
-import 'preventive.dart';
-import '../form_aumenta_laporan.dart';
+import 'preventivelist.dart';
+import 'form_aumenta_laporan.dart';
 
 class PreventivePage extends StatefulWidget {
   const PreventivePage({super.key});
@@ -35,7 +35,7 @@ class _PreventivePageState extends State<PreventivePage> {
     "Baucau": [
       {
         "id": "FO-BAU-01",
-        "name": "Baucau Villa - Vemasse",
+        "name": "Segmentu Baucau Villa - Vemasse",
         "distansia": "18.2 KM",
         "tipo": "Aerial",
         "status": "Stable",
@@ -44,7 +44,7 @@ class _PreventivePageState extends State<PreventivePage> {
     "Ermera": [
       {
         "id": "FO-BAU-01",
-        "name": "Ermera - Hatulia",
+        "name": "Segmentu Ermera - Hatulia",
         "distansia": "18.2 KM",
         "tipo": "Aerial",
         "status": "Stable",

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'otp_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController userCtrl = TextEditingController();
+  final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passCtrl = TextEditingController();
 
   // 1. Kria variable hodi kontrola loading
@@ -26,22 +27,28 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://172.20.222.82:8080/login"),
+        Uri.parse("http://172.20.222.97:3000/api/v1/auth/request-otp"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "username": userCtrl.text,
-          "password": passCtrl.text,
-        }),
+        body: jsonEncode({"email": emailCtrl.text, "password": passCtrl.text}),
       );
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['status'] == "otp_sent") {
+      if (response.statusCode == 200 &&
+          data['message'] == "OTP generated successfully") {
+        // 1. RAI SESSION ID BA LOCAL STORAGE
+        final prefs = await SharedPreferences.getInstance();
+
+        // Cek se backend haruka duni session_id
+        if (data['session_id'] != null) {
+          await prefs.setString('session_id', data['session_id']);
+        }
+
         Navigator.push(
           // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(
-            builder: (context) => OTPPage(username: userCtrl.text),
+            builder: (context) => OTPPage(email: emailCtrl.text),
           ),
         );
       } else {
@@ -83,9 +90,9 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 30),
               TextField(
-                controller: userCtrl,
+                controller: emailCtrl,
                 decoration: InputDecoration(
-                  labelText: "Username/Nik",
+                  labelText: "Email/Nik",
                   border: OutlineInputBorder(),
                 ),
               ),

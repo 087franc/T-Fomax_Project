@@ -58,6 +58,7 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: Colors.redAccent,
         elevation: 1,
         // IMPLEMENTASAUN LOGO HO TESTU IHA APPBAR
@@ -66,13 +67,7 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
             // Garanja file logo iha ona pasta assets
             // Image.asset('img/T-Fomax.png', height: 35),
             const SizedBox(width: 10),
-            const Text(
-              "Alker & Sarker",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const Text("Alker & Sarker", style: TextStyle(color: Colors.white)),
           ],
         ),
       ),

@@ -1,15 +1,14 @@
-// otp_page.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart'; // Aumenta ida ne'e
 import 'home_page.dart';
 
 class OTPPage extends StatefulWidget {
-  final String username;
-  const OTPPage({required this.username});
+  final String email;
+  const OTPPage({super.key, required this.email});
 
   @override
-  // ignore: library_private_types_in_public_api
   _OTPPageState createState() => _OTPPageState();
 }
 
@@ -23,23 +22,48 @@ class _OTPPageState extends State<OTPPage> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Cek se backend haruka duni session_id
+      final String? sessionId = prefs.getString('session_id');
+      if (sessionId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Session ID la hetan, favor login fali"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       final response = await http.post(
-        Uri.parse("http://172.20.222.82:8080/verify-otp"),
+        Uri.parse("http://172.20.222.97:3000/api/v1/auth/verify-otp"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"username": widget.username, "otp": otpCtrl.text}),
+        body: jsonEncode({"session_id": sessionId, "otp": otpCtrl.text}),
       );
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['status'] == "success") {
+      if (response.statusCode == 200 &&
+          data['message'] == "OTP verified successfully") {
+        // 2. NAVEGA BA DASHBOARD NO HAMOOS HISTORIA BACK
+
+        await prefs.setString('session_id', data['session_id']);
+        await prefs.setString(
+          'user_name',
+          data['user']['name'],
+        ); // Dadus husi backend
+        await prefs.setString('user_email', data['user']['email']);
+        await prefs.setString('user_role', data['user']['role']);
+
+        if (!mounted) return;
         Navigator.pushAndRemoveUntil(
-          // ignore: use_build_context_synchronously
           context,
-          MaterialPageRoute(builder: (context) => MainDashboardPage()),
+          MaterialPageRoute(builder: (context) => const MainDashboardPage()),
           (route) => false,
         );
       } else {
-        // ignore: use_build_context_synchronously
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(data['message'] ?? "OTP Sala"),
@@ -47,10 +71,20 @@ class _OTPPageState extends State<OTPPage> {
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Erro: Labele liga ba server"),
+          backgroundColor: Colors.orange,
+        ),
+      );
     } finally {
-      setState(() {
-        _isVerifying = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
     }
   }
 
@@ -59,36 +93,70 @@ class _OTPPageState extends State<OTPPage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 221, 219, 215),
       appBar: AppBar(
-        title: Text("Verifika OTP", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Verifika OTP",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.redAccent,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
-        child: Padding(
-          padding: EdgeInsets.only(top: 200, left: 50, right: 50),
-          child: Column(
-            children: [
-              Text(
-                "Hatama OTP ba user: ${widget.username}",
-                style: TextStyle(fontSize: 20),
-              ),
-              TextField(
-                controller: otpCtrl,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  hintText: "000000",
-                  hintStyle: TextStyle(fontSize: 20),
+        child: SingleChildScrollView(
+          // Di'ak liu uza scroll atu keyboard la taka input
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 50),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.security, size: 80, color: Colors.redAccent),
+                const SizedBox(height: 20),
+                Text(
+                  "User: ${widget.email}",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-
-              _isVerifying
-                  ? CircularProgressIndicator(color: Colors.green)
-                  : ElevatedButton(
-                      onPressed: verifyOTP,
-                      child: Text("Verifika OTP"),
-                    ),
-            ],
+                const SizedBox(height: 10),
+                const Text(
+                  "Hatama kódigu OTP ne'ebé haruka ona",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14),
+                ),
+                TextField(
+                  controller: otpCtrl,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    letterSpacing: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: "000000",
+                    hintStyle: TextStyle(color: Colors.grey, letterSpacing: 0),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _isVerifying
+                    ? const CircularProgressIndicator(color: Colors.redAccent)
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: verifyOTP,
+                          child: const Text("VERIFIKA AGORA"),
+                        ),
+                      ),
+              ],
+            ),
           ),
         ),
       ),

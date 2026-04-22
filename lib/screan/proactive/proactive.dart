@@ -46,8 +46,8 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Tambah Baru Proactive",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          "Aumenta Proactive",
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.redAccent,
         elevation: 0,
@@ -58,7 +58,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Deskripsi Proactive",
+              "Deskrisaun Proactive",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 8),
@@ -108,7 +108,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
                             Icon(Icons.add, size: 80, color: Colors.grey),
                             SizedBox(height: 10),
                             Text(
-                              "Tambah Baru\nFoto Attachment\nProactive",
+                              "Aumenta Foun\nFoto Attachment\nProactive",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.grey,
@@ -158,7 +158,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
                     ),
                   ),
                   child: const Text(
-                    "SIMPAN",
+                    "Submete Proactive",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,

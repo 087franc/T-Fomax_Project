@@ -10,8 +10,8 @@ class PotensiPengukuranPage extends StatefulWidget {
 class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
   final _formKey = GlobalKey<FormState>();
   String? _selectedMunisipio;
+  String? _selectedKabel;
   final TextEditingController _dbmController = TextEditingController();
-  final TextEditingController _kabelController = TextEditingController();
 
   // Lista Munisípiu Telkomcel nian
   final List<String> _munisipios = [
@@ -30,6 +30,87 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
     "Oecusse",
   ];
 
+  // Lista ID Kabel / Segmentu FO husi kada Munisípiu
+  final Map<String, List<String>> _kabelSegmentsByMunisipio = {
+    "Dili": [
+      "Segmentu Comoro - Tibar",
+      "Segmentu Dili - Baucau",
+      "Segmentu Dili - Liquica",
+    ],
+    "Baucau": [
+      "Segmentu Baucau Villa - Vemasse",
+      "Segmentu Baucau - Liquica",
+      "Segmentu Baucau - Ermera",
+      "Segmentu Baucau - Aileu",
+    ],
+    "Liquica": [
+      "Segmentu Liquica - Lospalos",
+      "Segmentu Liquica - Baucau",
+      "Segmentu Liquica - Ermera",
+      "Segmentu Liquica - Maliana",
+    ],
+    "Ermera": [
+      "Segmentu Ermera - Hatulia",
+      "Segmentu Ermera - Liquica",
+      "Segmentu Ermera - Baucau",
+      "Segmentu Ermera - Ainaro",
+    ],
+    "Aileu": [
+      "Segmentu Aileu - Manatuto",
+      "Segmentu Aileu - Baucau",
+      "Segmentu Aileu - Ermera",
+      "Segmentu Aileu - Manufahi",
+    ],
+    "Manufahi": [
+      "Segmentu Manufahi - Viqueque",
+      "Segmentu Manufahi - Liquica",
+      "Segmentu Manufahi - Baucau",
+      "Segmentu Manufahi - Oecusse",
+    ],
+    "Viqueque": [
+      "Segmentu Viqueque - Covalima",
+      "Segmentu Viqueque - Manufahi",
+      "Segmentu Viqueque - Liquica",
+      "Segmentu Viqueque - Manatuto",
+    ],
+    "Lospalos": [
+      "Segmentu Lospalos - Baucau",
+      "Segmentu Lospalos - Liquica",
+      "Segmentu Lospalos - Ermera",
+      "Segmentu Lospalos - Aileu",
+    ],
+    "Bobonaro": [
+      "Segmentu Bobonaro - Maliana",
+      "Segmentu Bobonaro - Liquica",
+      "Segmentu Bobonaro - Ermera",
+      "Segmentu Bobonaro - Ainaro",
+    ],
+    "Covalima": [
+      "Segmentu Covalima - Viqueque",
+      "Segmentu Covalima - Manufahi",
+      "Segmentu Covalima - Liquica",
+      "Segmentu Covalima - Manatuto",
+    ],
+    "Ainaro": [
+      "Segmentu Ainaro - Manatuto",
+      "Segmentu Ainaro - Baucau",
+      "Segmentu Ainaro - Ermera",
+      "Segmentu Ainaro - Manufahi",
+    ],
+    "Manatuto": [
+      "Segmentu Manatuto - Aileu",
+      "Segmentu Manatuto - Covalima",
+      "Segmentu Manatuto - Liquica",
+      "Segmentu Manatuto - Oecusse",
+    ],
+    "Oecusse": [
+      "Segmentu Oecusse - Liquica",
+      "Segmentu Oecusse - Manufahi",
+      "Segmentu Oecusse - Baucau",
+      "Segmentu Oecusse - Ainaro",
+    ],
+  };
+
   // Funsaun hodi analiza rezultadu sukat
   void _analizaPengukuran() {
     if (_formKey.currentState!.validate()) {
@@ -39,7 +120,7 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
       if (dbmValue < -25.0) {
         _showResultDialog(
           "PERIGU (dBm Drop)",
-          "Valor sukat -${dbmValue.abs()} dBm ne'e aas liu padraun. Sistema sei kria Ticket PREVENTIVE automátiku ba Munisípiu $_selectedMunisipio.",
+          "Valor sukat -${dbmValue.abs()} dBm ne'e aas liu padraun. Sistema sei kria Ticket PREVENTIVE automátiku ba Munisípiu $_selectedMunisipio, Segmentu $_selectedKabel.",
           Colors.red,
           true,
         );
@@ -124,14 +205,18 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
                 items: _munisipios
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
-                onChanged: (val) => setState(() => _selectedMunisipio = val),
+                onChanged: (val) => setState(() {
+                  _selectedMunisipio = val;
+                  _selectedKabel =
+                      null; // Reset kabel selection when municipality changes
+                }),
                 validator: (val) => val == null ? "Hili munisípiu ida" : null,
               ),
               const SizedBox(height: 20),
 
-              // 2. INPUT KABEL ID / SEGMENT
-              TextFormField(
-                controller: _kabelController,
+              // 2. SELECT KABEL ID / SEGMENT
+              DropdownButtonFormField<String>(
+                value: _selectedKabel,
                 decoration: InputDecoration(
                   labelText: "ID Kabel / Segmentu FO",
                   border: OutlineInputBorder(
@@ -139,7 +224,18 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
                   ),
                   prefixIcon: const Icon(Icons.settings_input_component),
                 ),
-                validator: (val) => val!.isEmpty ? "Input ID Kabel" : null,
+                items: (_selectedMunisipio != null
+                    ? (_kabelSegmentsByMunisipio[_selectedMunisipio] ?? [])
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e,
+                              child: Text(e),
+                            ),
+                          )
+                          .toList()
+                    : <DropdownMenuItem<String>>[]),
+                onChanged: (val) => setState(() => _selectedKabel = val),
+                validator: (val) => val == null ? "Hili ID Kabel" : null,
               ),
               const SizedBox(height: 20),
 
