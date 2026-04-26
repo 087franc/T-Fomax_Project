@@ -37,7 +37,7 @@ class _OTPPageState extends State<OTPPage> {
       }
 
       final response = await http.post(
-        Uri.parse("http://172.20.222.97:3000/api/v1/auth/verify-otp"),
+        Uri.parse("http://172.20.219.243:3000/api/v1/auth/verify-otp"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"session_id": sessionId, "otp": otpCtrl.text}),
       );

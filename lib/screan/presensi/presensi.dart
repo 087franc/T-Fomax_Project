@@ -136,7 +136,7 @@ class _PresensiPageState extends State<PresensiPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Lista Presensa FIXOM"),
+        title: const Text("Presensa"),
         backgroundColor: Colors.redAccent,
         foregroundColor: Colors.white,
       ),

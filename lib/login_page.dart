@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://172.20.222.97:3000/api/v1/auth/request-otp"),
+        Uri.parse("http://172.20.219.243:3000/api/v1/auth/request-otp"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": emailCtrl.text, "password": passCtrl.text}),
       );

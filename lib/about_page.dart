@@ -34,7 +34,7 @@ class AboutPage extends StatelessWidget {
                   radius: 80,
                   backgroundColor: Colors.white,
                   child: Image.asset(
-                    'img/T-Fomax.png',
+                    'img/t-fomax.jpg',
                     width: 100,
                     height: 120,
                     fit: BoxFit.cover,
@@ -52,7 +52,7 @@ class AboutPage extends StatelessWidget {
               ),
               const SizedBox(height: 15),
               const Text(
-                "Application Overview",
+                "Vizaun Jerál Aplikasaun nian",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -61,7 +61,7 @@ class AboutPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                "T-FOMAX is a comprehensive maintenance and operations management application designed to streamline your workflow and enhance productivity.",
+                "T-FOMAX maka aplikasaun jestaun manutensaun no operasaun sira ne'ebé komprensivu ne'ebé dezeña atu rasionaliza ita-boot nia fluxu serbisu no hasa'e produtividade.",
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.6,
@@ -78,34 +78,34 @@ class AboutPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              _buildFeatureItem("Presensi", "Track attendance and presence"),
+              _buildFeatureItem("Presensa", "Akompanha Presensa no Atividade"),
               _buildFeatureItem(
-                "Corrective",
-                "Manage corrective maintenance actions",
+                "Korektivu",
+                "Jere asaun manutensaun koretiva sira",
               ),
               _buildFeatureItem(
-                "Preventive",
-                "Plan preventive maintenance tasks",
+                "Preventivu",
+                "Planu no knaar sira manutensaun preventiva nian",
               ),
               _buildFeatureItem(
-                "Proactive",
-                "Implement proactive maintenance strategies",
+                "Proactivu",
+                "Implementa estratéjia sira manutensaun proativu nian",
               ),
               _buildFeatureItem(
-                "Potensi & Pengukuran",
-                "Measure and analyze potential issues",
+                "Potensial no Medida",
+                "Sukat no analiza kestaun potensiál sira",
               ),
               _buildFeatureItem(
-                "Alker & Sarker",
-                "Manage tools and equipment inventory",
+                "Fasilidade no Ekipamento",
+                "Jere inventáriu ferramenta no ekipamentu nian",
               ),
               _buildFeatureItem(
-                "Project Team",
-                "Collaborate with team members",
+                "Ekipa ba Projetu",
+                "Kolabora ho membru ekipa sira",
               ),
               const SizedBox(height: 25),
               const Text(
-                "Version",
+                "Versaun",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

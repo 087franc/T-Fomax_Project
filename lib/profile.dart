@@ -41,82 +41,84 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
-        children: [
-          // Header ho Foto Perfil
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Colors.redAccent,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header ho Foto Perfil
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 55,
+                      backgroundImage: const AssetImage(
+                        'img/profile.jpg',
+                      ), // Foto profile
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    role.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ],
               ),
             ),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 55,
-                    backgroundImage: const AssetImage(
-                      'img/profile.jpg',
-                    ), // Foto profile
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  role.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
-            ),
-          ),
 
-          // Detallu Informasaun
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildInfoTile(Icons.email, "Email", email),
-                _buildInfoTile(Icons.badge, "Role / Pozisaun", role),
-                _buildInfoTile(
-                  Icons.location_on,
-                  "Orijen",
-                  "Ermera",
-                ), // Ezemplu de'it
-                const SizedBox(height: 30),
+            // Detallu Informasaun
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  _buildInfoTile(Icons.email, "Email", email),
+                  _buildInfoTile(Icons.badge, "Role / Pozisaun", role),
+                  _buildInfoTile(
+                    Icons.location_on,
+                    "Orijen",
+                    "Ermera",
+                  ), // Ezemplu de'it
+                  const SizedBox(height: 30),
 
-                // Butaun Logout (opsionál iha ne'e mós bele)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // Lójika logout bele tau iha ne'e mós
-                  },
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  label: const Text("Edit Perfil"),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
+                  // Butaun Logout (opsionál iha ne'e mós bele)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      // Lójika logout bele tau iha ne'e mós
+                    },
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    label: const Text("Edit Perfil"),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

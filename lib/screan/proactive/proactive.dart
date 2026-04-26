@@ -46,7 +46,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Aumenta Proactive",
+          "Formulario Proactive",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.redAccent,
@@ -105,7 +105,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
                       : const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add, size: 80, color: Colors.grey),
+                            Icon(Icons.camera, size: 80, color: Colors.grey),
                             SizedBox(height: 10),
                             Text(
                               "Aumenta Foun\nFoto Attachment\nProactive",

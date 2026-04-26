@@ -181,7 +181,7 @@ class _PreventivePageState extends State<PreventivePage> {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: Colors.redAccent, // Kór matak FIXOM
         title: const Text(
-          "Form Preventive",
+          "Formulario Preventivu",
           style: TextStyle(color: Colors.white),
         ),
         actions: [

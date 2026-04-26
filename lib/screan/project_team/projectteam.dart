@@ -45,7 +45,7 @@ class _ProjectTeamPageState extends State<ProjectTeamPage> {
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: const Text(
-          "PROJECT TEAMS",
+          "Team no Projetu",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFED1C24),

@@ -91,7 +91,7 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("HAHU PATROLI"),
+        title: const Text("Formulario Patroli"),
         backgroundColor: const Color(0xFFED1C24),
         foregroundColor: Colors.white,
       ),

@@ -22,31 +22,31 @@ class MainDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> menuItems = [
-      {'title': 'Presensi', 'icon': Icons.touch_app, 'color': Colors.red},
-      {'title': 'Corrective', 'icon': Icons.build, 'color': Colors.blue},
+      {'title': 'Presensa', 'icon': Icons.touch_app, 'color': Colors.red},
+      {'title': 'Korektivu', 'icon': Icons.build, 'color': Colors.blue},
       {
-        'title': 'Preventive',
+        'title': 'Preventivu',
         'icon': Icons.energy_savings_leaf,
         'color': Colors.orange,
       },
       {
-        'title': 'Proactive',
+        'title': 'Proactivu',
         'icon': Icons.settings_input_component,
         'color': Colors.red,
       },
       {
-        'title': 'Potensi & \nPengukuran',
+        'title': 'Potensial no \nMedida',
         'icon': Icons.bolt,
         'color': Colors.green,
       },
       {
-        'title': 'Alker & Sarker',
+        'title': 'Fasilidade no \nEkipamento',
         'icon': Icons.inventory_2,
         'color': Colors.red,
       },
-      {'title': 'Project Team', 'icon': Icons.groups, 'color': Colors.grey},
+      {'title': 'Ekipa ba Projetu', 'icon': Icons.groups, 'color': Colors.grey},
       {
-        'title': 'Tagging',
+        'title': 'Tag',
         'icon': Icons.location_on_outlined,
         'color': Colors.blue,
       },
@@ -54,16 +54,31 @@ class MainDashboardPage extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50],
+      backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
-        backgroundColor: Colors.redAccent,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.redAccent, Color.fromARGB(255, 200, 20, 20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               "T-FOMAX Dashboard",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
             GestureDetector(
               onTap: () {
@@ -94,8 +109,8 @@ class MainDashboardPage extends StatelessWidget {
             const DrawerHeader(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('img/T-Fomax.png'),
-                  fit: BoxFit.cover,
+                  image: AssetImage('img/t-fomax.jpg'),
+                  fit: BoxFit.fill,
                 ),
 
                 color: Color.fromRGBO(255, 82, 82, 1),
@@ -141,7 +156,7 @@ class MainDashboardPage extends StatelessWidget {
 
                 Future<void> deleteData() async {
                   final url = Uri.parse(
-                    'http://172.20.222.97:3000/api/v1/user-sessions/${await getSessionId()}',
+                    'http://172.20.219.243:3000/api/v1/user-sessions/${await getSessionId()}',
                   );
 
                   final response = await http.delete(
@@ -171,72 +186,73 @@ class MainDashboardPage extends StatelessWidget {
       body: Stack(
         children: [
           Opacity(
-            opacity: 0.3,
+            opacity: 0.15, // Opacity dibuat lebih soft
             child: Container(
               width: double.infinity,
               height: double.infinity,
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('img/telkomcel.jpg'),
-                  fit: BoxFit.fill,
+                  image: AssetImage('img/t-fomax.jpg'),
+                  fit: BoxFit.fill, // Gunakan cover agar tidak distorsi
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
+            padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
             child: GridView.count(
+              clipBehavior: Clip.none, // Agar bayangan tidak terpotong
               crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.70, // Disesuaikan agar card lebih lega
               children: menuItems.map((item) {
                 return InkWell(
                   onTap: () {
                     // Logika navigasi tetap sama seperti kode Anda sebelumnya
-                    if (item['title'] == 'Preventive') {
+                    if (item['title'] == 'Preventivu') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const PreventivePage(),
                         ),
                       );
-                    } else if (item['title'] == 'Proactive') {
+                    } else if (item['title'] == 'Proactivu') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TambahProactivePage(),
                         ),
                       );
-                    } else if (item['title'] == 'Presensi') {
+                    } else if (item['title'] == 'Presensa') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const PresensiPage(),
                         ),
                       );
-                    } else if (item['title'] == 'Corrective') {
+                    } else if (item['title'] == 'Korektivu') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CorrectivePage(),
                         ),
                       );
-                    } else if (item['title'] == 'Potensi & \nPengukuran') {
+                    } else if (item['title'] == 'Potensial no \nMedida') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const PotensiPengukuranPage(),
                         ),
                       );
-                    } else if (item['title'] == 'Alker & Sarker') {
+                    } else if (item['title'] == 'Fasilidade no \nEkipamento') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => AlkerSarkerPage(),
                         ),
                       );
-                    } else if (item['title'] == 'Project Team') {
+                    } else if (item['title'] == 'Ekipa ba Projetu') {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -251,7 +267,9 @@ class MainDashboardPage extends StatelessWidget {
                       );
                     }
                   },
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
+                  splashColor: item['color'].withOpacity(0.2),
+                  highlightColor: item['color'].withOpacity(0.1),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -259,30 +277,30 @@ class MainDashboardPage extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          // --- VARIASI BORDER DI SINI ---
-                          border: Border.all(
-                            color: item['color'].withOpacity(
-                              0.5,
-                            ), // Warna border mengikuti warna icon
-                            width: 2, // Ketebalan border
-                          ),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                              color: item['color'].withOpacity(0.25),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          item['icon'],
-                          size: 45,
-                          color: item['color'],
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: item['color'].withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            item['icon'],
+                            size: 32,
+                            color: item['color'],
+                          ),
                         ),
                       ),
-
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
@@ -291,10 +309,11 @@ class MainDashboardPage extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                             color: Colors.black87,
                             height: 1.2,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),

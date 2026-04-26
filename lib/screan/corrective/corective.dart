@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'chat_team.dart';
+import '/home_page.dart';
 
 class CorrectivePage extends StatefulWidget {
   const CorrectivePage({super.key});
@@ -112,11 +113,14 @@ class _CorrectivePageState extends State<CorrectivePage> {
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "Corrective (Gangguan)",
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text("Korektivu", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const MainDashboardPage()),
+          ),
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),

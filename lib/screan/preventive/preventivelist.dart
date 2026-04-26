@@ -51,7 +51,7 @@ class PreventiveListPage extends StatelessWidget {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          "List Ticket Preventive",
+          "Lista Ticket Preventivu",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color.fromRGBO(255, 82, 82, 1),

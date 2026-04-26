@@ -34,7 +34,7 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
   final List<Equipment> inventory = [
     Equipment(
       id: "EQ-01",
-      name: "Splicer Fujikura",
+      name: "Splicer",
       category: "Alker",
       unit: "Unit",
       total: 10,
@@ -67,7 +67,10 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
             // Garanja file logo iha ona pasta assets
             // Image.asset('img/T-Fomax.png', height: 35),
             const SizedBox(width: 10),
-            const Text("Alker & Sarker", style: TextStyle(color: Colors.white)),
+            const Text(
+              "Fasilidade no Ekipamento",
+              style: TextStyle(color: Colors.white),
+            ),
           ],
         ),
       ),
