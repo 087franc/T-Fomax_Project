@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
         _showSnackBar(data['message'] ?? "Username/Password Sala", Colors.red);
       }
     } catch (e) {
-      _showSnackBar("Erro: Labele liga ba Server Go", Colors.orange);
+      _showSnackBar("Erro: Labele liga ba Server", Colors.orange);
     } finally {
       // 3. Desativa loading maski susesu ka failu
       setState(() {

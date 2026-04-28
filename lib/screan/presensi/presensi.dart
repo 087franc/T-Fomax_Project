@@ -130,7 +130,7 @@ class _PresensiPageState extends State<PresensiPage> {
   ///   "longitude": 125.5603143,
   ///   "timestamp": "2026-04-27T08:30:00Z"
   /// }
-  Future<bool> _sendClockInToBackend() async {
+  Future<String?> _sendClockInToBackend() async {
     setState(() => _isLoading = true);
 
     try {
@@ -166,18 +166,19 @@ class _PresensiPageState extends State<PresensiPage> {
           )
           .timeout(const Duration(seconds: 30));
 
+      final data = jsonDecode(response.body);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint("Clock In Success: ${response.body}");
-        return true;
+        return null; // Success
       } else {
         debugPrint("Clock In Error: ${response.statusCode} - ${response.body}");
-        return false;
+        // Check if backend returned a specific error message
+        return data['message'] ?? "Failed to send data. Please try again.";
       }
     } catch (e) {
       debugPrint("Clock In Exception: $e");
-      // For demo purposes, simulate success
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      return "Erro: Labele liga ba server";
     } finally {
       setState(() => _isLoading = false);
     }
@@ -194,20 +195,22 @@ class _PresensiPageState extends State<PresensiPage> {
   ///   "longitude": 125.5603143,
   ///   "timestamp": "2026-04-27T17:30:00Z"
   /// }
-  Future<bool> _sendClockOutToBackend() async {
+  Future<String?> _sendClockOutToBackend() async {
     setState(() => _isLoading = true);
 
     try {
+      final now = DateTime.now();
+      final timeStr = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+
       // Prepare the data
       final Map<String, dynamic> data = {
-        "session_id": _sessionId.isNotEmpty
-            ? _sessionId
-            : "user_123", // Use user ID from login
+        "session_id": _sessionId,
         "user_id": _userId,
+        "clock_out": timeStr,
         "activity_description": _taskController.text,
-        "lat_clock_out": _currentPosition?.latitude ?? 0.0,
-        "long_clock_out": _currentPosition?.longitude ?? 0.0,
-        //"timestamp": DateTime.now().toIso8601String(),
+        "lat_clock_out": (_currentPosition?.latitude ?? 0.0).toString(),
+        "long_clock_out": (_currentPosition?.longitude ?? 0.0).toString(),
+        "health": _healthCondition == "Saudável" ? "0" : "1",
         "type": "CLOCK_OUT",
       };
 
@@ -229,7 +232,7 @@ class _PresensiPageState extends State<PresensiPage> {
         var stream = http.ByteStream(_imageFile!.openRead());
         var length = await _imageFile!.length();
         var multipartFile = http.MultipartFile(
-          "photo",
+          "activity_image",
           stream,
           length,
           filename: _imageFile!.path.split("/").last,
@@ -239,21 +242,24 @@ class _PresensiPageState extends State<PresensiPage> {
 
       // Send the request
       var response = await request.send().timeout(const Duration(seconds: 30));
+      final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseBody = await response.stream.bytesToString();
         debugPrint("Clock Out Success: $responseBody");
-        return true;
+        return null; // Success
       } else {
-        debugPrint("Clock Out Error: ${response.statusCode}");
-        return false;
+        debugPrint("Clock Out Error: ${response.statusCode} - $responseBody");
+        try {
+          final decoded = jsonDecode(responseBody);
+          return decoded['message'] ??
+              "Failed to send data. Please try again.";
+        } catch (e) {
+          return "Failed to send data. Status: ${response.statusCode}";
+        }
       }
     } catch (e) {
       debugPrint("Clock Out Exception: $e");
-      // For demo purposes, simulate success
-      // Remove this in production
-      await Future.delayed(const Duration(seconds: 1));
-      return true;
+      return "Erro: Labele liga ba server";
     } finally {
       setState(() => _isLoading = false);
     }
@@ -448,17 +454,17 @@ class _PresensiPageState extends State<PresensiPage> {
   Future<void> _handleClockInLongPress() async {
     // Clock in doesn't require photo - only health condition
     _showLoadingDialog();
-    final success = await _sendClockInToBackend();
+    final errorMessage = await _sendClockInToBackend();
 
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
-      if (success) {
+      if (errorMessage == null) {
         _showSuccessDialog(
           "Susesu In",
           "Ita-nia kondisaun: $_healthCondition. Servisu di'ak!",
         );
       } else {
-        _showErrorDialog("Failed to send data. Please try again.");
+        _showErrorDialog(errorMessage);
       }
     }
   }
@@ -471,17 +477,17 @@ class _PresensiPageState extends State<PresensiPage> {
     }
 
     _showLoadingDialog();
-    final success = await _sendClockOutToBackend();
+    final errorMessage = await _sendClockOutToBackend();
 
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
-      if (success) {
+      if (errorMessage == null) {
         _showSuccessDialog(
           "Susesu Out",
           "Obrigadu ba ita-nia servisu ohin. Deskansa di'ak!",
         );
       } else {
-        _showErrorDialog("Failed to send data. Please try again.");
+        _showErrorDialog(errorMessage);
       }
     }
   }
@@ -735,69 +741,146 @@ class _PresensiPageState extends State<PresensiPage> {
 
             // Photo Section - Only visible during Clock Out (evening)
             if (isEvening) ...[
-              if (isEvening) ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Relatóriu Servisu Ohin (*)",
+              // Health Condition Form (Evening) - Same as Morning
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Kondisaun Saúde (*)",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black87,
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        // ignore: deprecated_member_use
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _taskController,
-                    maxLines: 4,
-                    onChanged: (val) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: "Hakerek saida mak halo ona...",
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Colors.redAccent,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
+                  TextButton.icon(
+                    onPressed: _toggleHealthForm,
+                    icon: Icon(
+                      _isHealthFormVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      size: 20,
+                    ),
+                    label: Text(_isHealthFormVisible ? "Loke" : "oke"),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: _isHealthFormVisible ? 120 : 0,
+                child: _isHealthFormVisible
+                    ? DropdownButtonFormField<String>(
+                        value: _healthCondition,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.redAccent,
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        items:
+                            [
+                                  "Saudável",
+                                  "Isin-manas",
+                                  "Me'ar",
+                                  "Inus-metin",
+                                  "Ulun-Moras",
+                                ]
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(e),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (val) =>
+                            setState(() => _healthCondition = val!),
+                      )
+                    : const SizedBox(),
+              ),
+              const SizedBox(height: 10),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Relatóriu Servisu Ohin (*)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 28),
-              ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      // ignore: deprecated_member_use
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _taskController,
+                  maxLines: 4,
+                  onChanged: (val) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: "Hakerek saida mak halo ona...",
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Colors.redAccent,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
 
               // Photo Section - Only visible during Clock Out (evening)
               if (isEvening) ...[
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Hasai Foto Oin (*)",
+                    "Hasai Foto servisu nian (*)",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -929,26 +1012,22 @@ class _PresensiPageState extends State<PresensiPage> {
                         Colors.redAccent,
                         (_imageFile != null && _taskController.text.isNotEmpty),
                         () {
-                          // Tap - show all forms (photo, job description, health)
-                          setState(() {
-                            _isHealthFormVisible = true;
-                            _isPhotoFormVisible = true;
-                          });
-                          // Scroll to show forms
-                          Future.delayed(const Duration(milliseconds: 100), () {
-                            if (mounted) {
-                              Scrollable.ensureVisible(
-                                context,
-                                duration: const Duration(milliseconds: 300),
-                              );
-                            }
-                          });
+                          // If forms are filled, handle clock out
+                          if (_imageFile != null &&
+                              _taskController.text.isNotEmpty) {
+                            _handleClockOutLongPress();
+                          } else {
+                            // Otherwise show forms
+                            setState(() {
+                              _isHealthFormVisible = true;
+                              _isPhotoFormVisible = true;
+                            });
+                          }
                         },
-                        onLongPress: _handleClockOutLongPress,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        "Tap to show forms • Long press to confirm",
+                        "Press to confirm Clock Out",
                         style: TextStyle(
                           color: Colors.grey.shade500,
                           fontSize: 12,
@@ -969,7 +1048,10 @@ class _PresensiPageState extends State<PresensiPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.access_time, color: Colors.orange.shade700),
+                      Icon(
+                        Icons.access_time,
+                        color: const Color.fromARGB(255, 63, 52, 42),
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         "Ondu la'ós oras presensa",
