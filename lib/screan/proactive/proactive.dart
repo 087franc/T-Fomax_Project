@@ -105,7 +105,7 @@ class _TambahProactivePageState extends State<TambahProactivePage> {
                       : const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.camera, size: 80, color: Colors.grey),
+                            Icon(Icons.image, size: 80, color: Colors.grey),
                             SizedBox(height: 10),
                             Text(
                               "Aumenta Foun\nFoto Attachment\nProactive",

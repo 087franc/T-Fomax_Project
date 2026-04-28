@@ -37,7 +37,7 @@ class _OTPPageState extends State<OTPPage> {
       }
 
       final response = await http.post(
-        Uri.parse("http://172.20.219.243:3000/api/v1/auth/verify-otp"),
+        Uri.parse("http://172.20.222.203:3000/api/v1/auth/verify-otp"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"session_id": sessionId, "otp": otpCtrl.text}),
       );
@@ -49,6 +49,12 @@ class _OTPPageState extends State<OTPPage> {
         // 2. NAVEGA BA DASHBOARD NO HAMOOS HISTORIA BACK
 
         await prefs.setString('session_id', data['session_id']);
+        if (data['session_token'] != null) {
+          await prefs.setString('session_token', data['session_token']);
+        }
+        if (data['user'] != null && data['user']['id'] != null) {
+          await prefs.setString('user_id', data['user']['id'].toString());
+        }
         await prefs.setString(
           'user_name',
           data['user']['name'],

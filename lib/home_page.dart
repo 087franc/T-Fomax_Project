@@ -109,7 +109,7 @@ class MainDashboardPage extends StatelessWidget {
             const DrawerHeader(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('img/t-fomax.jpg'),
+                  image: AssetImage('img/t-fomax.webp'),
                   fit: BoxFit.fill,
                 ),
 
@@ -148,35 +148,38 @@ class MainDashboardPage extends StatelessWidget {
               leading: const Icon(Icons.logout),
               title: const Text('Termina Sesaun'),
               onTap: () {
-                //get session_id from shared preferences
-                Future<String?> getSessionId() async {
+                Future<void> handleLogout() async {
                   final prefs = await SharedPreferences.getInstance();
-                  return prefs.getString('session_id');
-                }
+                  final sessionId = prefs.getString('session_id');
 
-                Future<void> deleteData() async {
-                  final url = Uri.parse(
-                    'http://172.20.219.243:3000/api/v1/user-sessions/${await getSessionId()}',
-                  );
-
-                  final response = await http.delete(
-                    url,
-                    headers: {'Content-Type': 'application/json'},
-                  );
-
-                  if (response.statusCode == 200 ||
-                      response.statusCode == 204) {
-                    print('Data berhasil dihapus');
-                  } else {
-                    print('Gagal hapus data: ${response.statusCode}');
+                  // 1. Delete session on backend
+                  if (sessionId != null) {
+                    try {
+                      final url = Uri.parse(
+                        'http://172.20.222.203:3000/api/v1/user-sessions/$sessionId',
+                      );
+                      await http.delete(
+                        url,
+                        headers: {'Content-Type': 'application/json'},
+                      );
+                    } catch (e) {
+                      debugPrint('Error deleting session from backend: $e');
+                    }
                   }
+
+                  // 2. Clear local session data
+                  await prefs.clear();
+
+                  // 3. Navigate to LoginPage
+                  if (!context.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
                 }
 
-                deleteData();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
+                handleLogout();
               },
             ),
           ],
@@ -192,7 +195,7 @@ class MainDashboardPage extends StatelessWidget {
               height: double.infinity,
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('img/t-fomax.jpg'),
+                  image: AssetImage('img/t-fomax.webp'),
                   fit: BoxFit.fill, // Gunakan cover agar tidak distorsi
                 ),
               ),

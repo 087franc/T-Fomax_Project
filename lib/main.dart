@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 // import 'login_page.dart'; // Importa failu login ne'ebé ita kria ona
 // import 'otp_page.dart'; // Importa failu otp ne'ebé ita kria ona
+// import 'home_page.dart';
+import 'login_page.dart';
 import 'home_page.dart';
-// import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,10 +19,65 @@ class MyApp extends StatelessWidget {
       title: 'T-Fomax', // Telkomcel Fiber Optic Maintenance Excellence
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      home: const SessionCheck(),
+    );
+  }
+}
 
-      home: MainDashboardPage(),
+class SessionCheck extends StatefulWidget {
+  const SessionCheck({super.key});
 
-      routes: {'': (context) => MainDashboardPage()},
+  @override
+  State<SessionCheck> createState() => _SessionCheckState();
+}
+
+class _SessionCheckState extends State<SessionCheck> {
+  Future<bool> _isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('session_token');
+    return token != null && token.isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _navigateToNext();
+  }
+
+  void _navigateToNext() async {
+    bool isLoggedIn = await _isLoggedIn();
+    await Future.delayed(const Duration(seconds: 2));
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainDashboardPage()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _isLoggedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: Colors.redAccent),
+            ),
+          );
+        }
+        if (snapshot.data == true) {
+          return const MainDashboardPage();
+        } else {
+          return const LoginPage();
+        }
+      },
     );
   }
 }

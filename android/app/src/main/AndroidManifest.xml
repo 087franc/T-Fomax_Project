@@ -10,7 +10,7 @@
 
     
     <application
-        android:label="application_3"
+        android:label="TFomax_TL"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
