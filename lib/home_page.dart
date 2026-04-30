@@ -156,7 +156,7 @@ class MainDashboardPage extends StatelessWidget {
                   if (sessionId != null) {
                     try {
                       final url = Uri.parse(
-                        'http://172.20.222.203:3000/api/v1/user-sessions/$sessionId',
+                        'http://172.20.222.144:3000/api/v1/user-sessions/$sessionId',
                       );
                       await http.delete(
                         url,

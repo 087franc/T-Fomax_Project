@@ -30,16 +30,60 @@ class _PresensiPageState extends State<PresensiPage> {
   String _sessionId = "";
   String _userId = "";
   String _sessionToken = "";
+  String _scheduleType = "fixed";
+  String _shiftIn = "08:00:00";
+  String _shiftOut = "17:00:00";
+  bool _hasClockedIn = false;
 
   // 2. Tambahkan variabel untuk Timer dan String waktu
   Timer? _timer;
   String _currentTime = "";
 
   // Backend API URL - replace with your actual API endpoint
-  static const String _baseUrl = "http://172.20.222.203:3000";
+  static const String _baseUrl = "http://172.20.222.144:3000";
 
-  bool get isMorning => DateTime.now().hour >= 8 && DateTime.now().hour < 12;
-  bool get isEvening => DateTime.now().hour >= 17 && DateTime.now().hour < 21;
+  bool get isMorning {
+    // If already clocked in, don't show the morning/clock-in form
+    if (_hasClockedIn) return false;
+
+    if (_scheduleType == 'shift') {
+      return true; // Always available for shift until clocked in
+    }
+    // For fixed, only available during 08:00 - 12:00
+    return DateTime.now().hour >= 8 && DateTime.now().hour < 12;
+  }
+
+  bool get isEvening {
+    // Clock-out form only appears after clock-in is done
+    if (!_hasClockedIn) return false;
+
+    if (_scheduleType == 'shift') {
+      return true; // Available immediately after clock-in for shift
+    }
+    // For fixed, must wait until 17:00 - 21:00
+    return DateTime.now().hour >= 17 && DateTime.now().hour < 21;
+  }
+
+  bool _isWithinWindow(
+    String timeStr,
+    int startOffsetHours,
+    int endOffsetHours,
+  ) {
+    try {
+      final now = DateTime.now();
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      final baseTime = DateTime(now.year, now.month, now.day, hour, minute);
+      final startTime = baseTime.add(Duration(hours: startOffsetHours));
+      final endTime = baseTime.add(Duration(hours: endOffsetHours));
+
+      return now.isAfter(startTime) && now.isBefore(endTime);
+    } catch (e) {
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -60,6 +104,10 @@ class _PresensiPageState extends State<PresensiPage> {
           prefs.getString('session_id') ?? ''; // Use session_id from login
       _userId = prefs.getString('user_id') ?? '';
       _sessionToken = prefs.getString('session_token') ?? '';
+      _scheduleType = prefs.getString('user_schedule_type') ?? 'fixed';
+      _shiftIn = prefs.getString('start_shift') ?? '08:00:00';
+      _shiftOut = prefs.getString('end_shift') ?? '17:00:00';
+      _hasClockedIn = prefs.getBool('has_clocked_in_${_userId}') ?? false;
     });
     debugPrint(
       "User ID: $_userId, Session ID: $_sessionId, Token: ${_sessionToken.isNotEmpty ? 'Present' : 'Missing'}",
@@ -251,8 +299,7 @@ class _PresensiPageState extends State<PresensiPage> {
         debugPrint("Clock Out Error: ${response.statusCode} - $responseBody");
         try {
           final decoded = jsonDecode(responseBody);
-          return decoded['message'] ??
-              "Failed to send data. Please try again.";
+          return decoded['message'] ?? "Failed to send data. Please try again.";
         } catch (e) {
           return "Failed to send data. Status: ${response.statusCode}";
         }
@@ -459,6 +506,11 @@ class _PresensiPageState extends State<PresensiPage> {
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
       if (errorMessage == null) {
+        // Set clocked in status
+        setState(() => _hasClockedIn = true);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('has_clocked_in_${_userId}', true);
+
         _showSuccessDialog(
           "Susesu In",
           "Ita-nia kondisaun: $_healthCondition. Servisu di'ak!",
@@ -482,6 +534,11 @@ class _PresensiPageState extends State<PresensiPage> {
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
       if (errorMessage == null) {
+        // Reset clocked in status after successful clock out
+        setState(() => _hasClockedIn = false);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('has_clocked_in_${_userId}', false);
+
         _showSuccessDialog(
           "Susesu Out",
           "Obrigadu ba ita-nia servisu ohin. Deskansa di'ak!",
@@ -537,6 +594,15 @@ class _PresensiPageState extends State<PresensiPage> {
         ),
       ),
     );
+  }
+
+  bool _isLate() {
+    if (_scheduleType == 'shift') {
+      final parts = _shiftIn.split(':');
+      final shiftHour = int.parse(parts[0]);
+      return DateTime.now().hour >= shiftHour + 1; // 1 hour late
+    }
+    return DateTime.now().hour >= 9;
   }
 
   @override
@@ -694,8 +760,8 @@ class _PresensiPageState extends State<PresensiPage> {
                     : const SizedBox(),
               ),
               const SizedBox(height: 10),
-              // Late Reason field - only visible if past 09:00
-              if (DateTime.now().hour >= 9) ...[
+              // Late Reason field - only visible if past scheduled start time
+              if (_isLate()) ...[
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(

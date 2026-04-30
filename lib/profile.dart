@@ -12,6 +12,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String name = "";
   String email = "";
   String role = "";
+  String scheduleType = "";
 
   @override
   void initState() {
@@ -26,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
       name = prefs.getString('user_name') ?? "Utilizador";
       email = prefs.getString('user_email') ?? "email@exemplo.com";
       role = prefs.getString('user_role') ?? "Staff";
+      scheduleType = prefs.getString('user_schedule_type') ?? "fixed";
     });
   }
 
@@ -57,12 +59,12 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 55,
-                      backgroundImage: const AssetImage(
+                      backgroundImage: AssetImage(
                         'img/profile.jpg',
                       ), // Foto profile
                     ),
@@ -97,9 +99,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildInfoTile(Icons.email, "Email", email),
                   _buildInfoTile(Icons.badge, "Role / Pozisaun", role),
                   _buildInfoTile(
-                    Icons.location_on,
-                    "Orijen",
-                    "Ermera",
+                    Icons.schedule,
+                    "Schedule Type",
+                    scheduleType,
                   ), // Ezemplu de'it
                   const SizedBox(height: 30),
 

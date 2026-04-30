@@ -37,7 +37,7 @@ class _OTPPageState extends State<OTPPage> {
       }
 
       final response = await http.post(
-        Uri.parse("http://172.20.222.203:3000/api/v1/auth/verify-otp"),
+        Uri.parse("http://172.20.222.144:3000/api/v1/auth/verify-otp"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"session_id": sessionId, "otp": otpCtrl.text}),
       );
@@ -61,6 +61,10 @@ class _OTPPageState extends State<OTPPage> {
         ); // Dadus husi backend
         await prefs.setString('user_email', data['user']['email']);
         await prefs.setString('user_role', data['user']['role']);
+        await prefs.setString(
+          'user_schedule_type',
+          data['user']['schedule_type'],
+        ); // hora diresaun
 
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
