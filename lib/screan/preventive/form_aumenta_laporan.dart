@@ -108,7 +108,7 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
             _buildLabel("Kategori Atividade (*)"),
             DropdownButtonFormField<String>(
               hint: const Text("Hili Kategoria"),
-              value: _selectedKategori,
+              initialValue: _selectedKategori,
               decoration: _inputStyle(),
               items: _kategoriList
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))

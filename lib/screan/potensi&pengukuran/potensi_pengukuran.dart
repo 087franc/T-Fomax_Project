@@ -263,7 +263,7 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
 
               // 2. SELECT KABEL ID / segT
               DropdownButtonFormField<String>(
-                value: _selectedKabel,
+                initialValue: _selectedKabel,
                 decoration: InputDecoration(
                   labelText: "ID Kabel / seg FO",
                   border: OutlineInputBorder(
@@ -378,7 +378,9 @@ class _PotensiPengukuranPageState extends State<PotensiPengukuranPage> {
               // 4. INPUT DBM
               TextFormField(
                 controller: _dbmController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: "Valor sukat (dBm)",
                   hintText: "Ezemplu: -18.5",

@@ -10,15 +10,6 @@
 analyzer:
   errors:
     unused_field: ignore
-analyzer:
-  errors:
-    unused_field: ignore
-analyzer:
-  errors:
-    unused_field: ignore
-analyzer:
-  errors:
-    unused_field: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

@@ -35,7 +35,23 @@ class _SessionCheckState extends State<SessionCheck> {
   Future<bool> _isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('session_token');
-    return token != null && token.isNotEmpty;
+    final int? loginTimestamp = prefs.getInt('login_timestamp');
+
+    if (token == null || token.isEmpty || loginTimestamp == null) {
+      return false;
+    }
+
+    final DateTime loginDate = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
+    final DateTime now = DateTime.now();
+    final int differenceInDays = now.difference(loginDate).inDays;
+
+    if (differenceInDays >= 3) {
+      // Session expired, clear prefs
+      await prefs.clear();
+      return false;
+    }
+
+    return true;
   }
 
   @override

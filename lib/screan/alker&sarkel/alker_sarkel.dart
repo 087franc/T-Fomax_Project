@@ -62,12 +62,12 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
         backgroundColor: Colors.redAccent,
         elevation: 1,
         // IMPLEMENTASAUN LOGO HO TESTU IHA APPBAR
-        title: Row(
+        title: const Row(
           children: [
             // Garanja file logo iha ona pasta assets
             // Image.asset('img/T-Fomax.png', height: 35),
-            const SizedBox(width: 10),
-            const Text(
+            SizedBox(width: 10),
+            Text(
               "Fasilidade no Ekipamento",
               style: TextStyle(color: Colors.white),
             ),

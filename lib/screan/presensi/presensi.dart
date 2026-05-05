@@ -2,10 +2,10 @@ import 'dart:async'; // 1. Tambahkan import ini
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PresensiPage extends StatefulWidget {
@@ -40,7 +40,6 @@ class _PresensiPageState extends State<PresensiPage> {
   String _currentTime = "";
 
   // Backend API URL - replace with your actual API endpoint
-  static const String _baseUrl = "http://172.20.222.144:3000";
 
   bool get isMorning {
     // If already clocked in, don't show the morning/clock-in form
@@ -107,7 +106,7 @@ class _PresensiPageState extends State<PresensiPage> {
       _scheduleType = prefs.getString('user_schedule_type') ?? 'fixed';
       _shiftIn = prefs.getString('start_shift') ?? '08:00:00';
       _shiftOut = prefs.getString('end_shift') ?? '17:00:00';
-      _hasClockedIn = prefs.getBool('has_clocked_in_${_userId}') ?? false;
+      _hasClockedIn = prefs.getBool('has_clocked_in_$_userId') ?? false;
     });
     debugPrint(
       "User ID: $_userId, Session ID: $_sessionId, Token: ${_sessionToken.isNotEmpty ? 'Present' : 'Missing'}",
@@ -202,17 +201,10 @@ class _PresensiPageState extends State<PresensiPage> {
         "health": healthCode,
       };
 
-      final response = await http
-          .post(
-            Uri.parse("$_baseUrl/api/v1/attendance/clockin"),
-            headers: {
-              "Content-Type": "application/json",
-              if (_sessionToken.isNotEmpty)
-                "Authorization": "Bearer $_sessionToken",
-            },
-            body: jsonEncode(requestBody),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await ApiService().post(
+        "/api/v1/attendance/clockin",
+        requestBody,
+      );
 
       final data = jsonDecode(response.body);
 
@@ -250,46 +242,22 @@ class _PresensiPageState extends State<PresensiPage> {
       final now = DateTime.now();
       final timeStr = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
 
-      // Prepare the data
-      final Map<String, dynamic> data = {
-        "session_id": _sessionId,
-        "user_id": _userId,
-        "clock_out": timeStr,
-        "activity_description": _taskController.text,
-        "lat_clock_out": (_currentPosition?.latitude ?? 0.0).toString(),
-        "long_clock_out": (_currentPosition?.longitude ?? 0.0).toString(),
-        "health": _healthCondition == "Saudável" ? "0" : "1",
-        "type": "CLOCK_OUT",
-      };
+      var response = await ApiService().multipartPost(
+        "/api/v1/attendance/clockout",
+        fields: {
+          "session_id": _sessionId,
+          "user_id": _userId,
+          "clock_out": timeStr,
+          "activity_description": _taskController.text,
+          "lat_clock_out": (_currentPosition?.latitude ?? 0.0).toString(),
+          "long_clock_out": (_currentPosition?.longitude ?? 0.0).toString(),
+          "health": _healthCondition == "Saudável" ? "0" : "1",
+          "type": "CLOCK_OUT",
+        },
+        imageFile: _imageFile,
+        imageField: "activity_image",
+      );
 
-      var uri = Uri.parse("$_baseUrl/api/v1/attendance/clockout");
-      var request = http.MultipartRequest("POST", uri);
-
-      // Add Authorization header
-      if (_sessionToken.isNotEmpty) {
-        request.headers["Authorization"] = "Bearer $_sessionToken";
-      }
-
-      // Add text fields
-      data.forEach((key, value) {
-        request.fields[key] = value.toString();
-      });
-
-      // Add photo file if exists
-      if (_imageFile != null) {
-        var stream = http.ByteStream(_imageFile!.openRead());
-        var length = await _imageFile!.length();
-        var multipartFile = http.MultipartFile(
-          "activity_image",
-          stream,
-          length,
-          filename: _imageFile!.path.split("/").last,
-        );
-        request.files.add(multipartFile);
-      }
-
-      // Send the request
-      var response = await request.send().timeout(const Duration(seconds: 30));
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -509,7 +477,7 @@ class _PresensiPageState extends State<PresensiPage> {
         // Set clocked in status
         setState(() => _hasClockedIn = true);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('has_clocked_in_${_userId}', true);
+        await prefs.setBool('has_clocked_in_$_userId', true);
 
         _showSuccessDialog(
           "Susesu In",
@@ -537,7 +505,7 @@ class _PresensiPageState extends State<PresensiPage> {
         // Reset clocked in status after successful clock out
         setState(() => _hasClockedIn = false);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('has_clocked_in_${_userId}', false);
+        await prefs.setBool('has_clocked_in_$_userId', false);
 
         _showSuccessDialog(
           "Susesu Out",
@@ -715,7 +683,7 @@ class _PresensiPageState extends State<PresensiPage> {
                 height: _isHealthFormVisible ? 120 : 0,
                 child: _isHealthFormVisible
                     ? DropdownButtonFormField<String>(
-                        value: _healthCondition,
+                        initialValue: _healthCondition,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -840,7 +808,7 @@ class _PresensiPageState extends State<PresensiPage> {
                 height: _isHealthFormVisible ? 120 : 0,
                 child: _isHealthFormVisible
                     ? DropdownButtonFormField<String>(
-                        value: _healthCondition,
+                        initialValue: _healthCondition,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
@@ -1114,9 +1082,9 @@ class _PresensiPageState extends State<PresensiPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time,
-                        color: const Color.fromARGB(255, 63, 52, 42),
+                        color: Color.fromARGB(255, 63, 52, 42),
                       ),
                       const SizedBox(width: 12),
                       Text(

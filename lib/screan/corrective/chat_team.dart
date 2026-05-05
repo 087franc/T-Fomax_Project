@@ -75,7 +75,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
       appBar: AppBar(
         title: Text(
           "Chat: ${widget.ticketId}",
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blueAccent,
         actions: [

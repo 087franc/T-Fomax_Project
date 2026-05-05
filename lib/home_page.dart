@@ -13,8 +13,7 @@ import 'about_page.dart';
 import 'profile.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:http/http.dart' as http;
+import 'services/api_service.dart';
 
 class MainDashboardPage extends StatelessWidget {
   const MainDashboardPage({super.key});
@@ -155,12 +154,8 @@ class MainDashboardPage extends StatelessWidget {
                   // 1. Delete session on backend
                   if (sessionId != null) {
                     try {
-                      final url = Uri.parse(
-                        'http://172.20.222.144:3000/api/v1/user-sessions/$sessionId',
-                      );
-                      await http.delete(
-                        url,
-                        headers: {'Content-Type': 'application/json'},
+                      await ApiService().delete(
+                        '/api/v1/user-sessions/$sessionId',
                       );
                     } catch (e) {
                       debugPrint('Error deleting session from backend: $e');
@@ -224,7 +219,7 @@ class MainDashboardPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TambahProactivePage(),
+                          builder: (context) => const TambahProactivePage(),
                         ),
                       );
                     } else if (item['title'] == 'Presensa') {
@@ -238,7 +233,7 @@ class MainDashboardPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => CorrectivePage(),
+                          builder: (context) => const CorrectivePage(),
                         ),
                       );
                     } else if (item['title'] == 'Potensial no \nMedida') {
@@ -252,7 +247,7 @@ class MainDashboardPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AlkerSarkerPage(),
+                          builder: (context) => const AlkerSarkerPage(),
                         ),
                       );
                     } else if (item['title'] == 'Ekipa ba Projetu') {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/api_service.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -105,17 +107,62 @@ class _ProfilePageState extends State<ProfilePage> {
                   ), // Ezemplu de'it
                   const SizedBox(height: 30),
 
-                  // Butaun Logout (opsionál iha ne'e mós bele)
-                  OutlinedButton.icon(
+                  ElevatedButton.icon(
                     onPressed: () {
-                      // Lójika logout bele tau iha ne'e mós
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChangePasswordPage(),
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    label: const Text("Edit Perfil"),
-                    style: OutlinedButton.styleFrom(
+                    icon: const Icon(Icons.settings, color: Colors.white),
+                    label: const Text("Troka Password"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
                     ),
                   ),
+                  const Padding(padding: EdgeInsets.only(top: 10)),
+                  // // Logout Button
+                  // ElevatedButton.icon(
+                  //   onPressed: () async {
+                  //     final prefs = await SharedPreferences.getInstance();
+                  //     final sessionId = prefs.getString('session_id');
+
+                  //     // 1. Delete session on backend
+                  //     if (sessionId != null) {
+                  //       try {
+                  //         await ApiService().delete(
+                  //           '/api/v1/user-sessions/$sessionId',
+                  //         );
+                  //       } catch (e) {
+                  //         debugPrint('Error deleting session from backend: $e');
+                  //       }
+                  //     }
+
+                  //     // 2. Clear local session data
+                  //     await prefs.clear();
+
+                  //     // 3. Navigate to LoginPage
+                  //     if (!mounted) return;
+                  //     Navigator.pushAndRemoveUntil(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) => const LoginPage(),
+                  //       ),
+                  //       (route) => false,
+                  //     );
+                  //   },
+                  //   icon: const Icon(Icons.logout, color: Colors.white),
+                  //   label: const Text("Termina Sesaun"),
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: Colors.redAccent,
+                  //     foregroundColor: Colors.white,
+                  //     minimumSize: const Size(double.infinity, 50),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -144,6 +191,31 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class ChangePasswordPage extends StatefulWidget {
+  const ChangePasswordPage({super.key});
+
+  @override
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Troka Password",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.redAccent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: const Center(child: Text("Troka Password")),
     );
   }
 }

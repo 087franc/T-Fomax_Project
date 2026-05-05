@@ -116,7 +116,7 @@ class _CorrectivePageState extends State<CorrectivePage> {
         title: const Text("Korektivu", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MainDashboardPage()),
           ),

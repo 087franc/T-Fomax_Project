@@ -118,7 +118,7 @@ class _PreventivePageState extends State<PreventivePage> {
   void _openPatrolForm() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => StartPatroliPage()),
+      MaterialPageRoute(builder: (context) => const StartPatroliPage()),
     );
   }
 
@@ -141,8 +141,8 @@ class _PreventivePageState extends State<PreventivePage> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+            child: const Text("CANCEL"),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),

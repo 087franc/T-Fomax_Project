@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'services/api_service.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart'; // Aumenta ida ne'e
 import 'home_page.dart';
@@ -36,11 +36,10 @@ class _OTPPageState extends State<OTPPage> {
         return;
       }
 
-      final response = await http.post(
-        Uri.parse("http://172.20.222.144:3000/api/v1/auth/verify-otp"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"session_id": sessionId, "otp": otpCtrl.text}),
-      );
+      final response = await ApiService().post("/api/v1/auth/verify-otp", {
+        "session_id": sessionId,
+        "otp": otpCtrl.text,
+      });
 
       final data = jsonDecode(response.body);
 
@@ -61,10 +60,9 @@ class _OTPPageState extends State<OTPPage> {
         ); // Dadus husi backend
         await prefs.setString('user_email', data['user']['email']);
         await prefs.setString('user_role', data['user']['role']);
-        await prefs.setString(
-          'user_schedule_type',
-          data['user']['schedule_type'],
-        ); // hora diresaun
+        await prefs.setString('user_schedule_type', data['user']['schedule_type']); // hora diresaun
+        // Save login timestamp for 3-day session check
+        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
 
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(

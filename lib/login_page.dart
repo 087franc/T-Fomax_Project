@@ -1,6 +1,6 @@
 // login_page.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'services/api_service.dart';
 import 'dart:convert';
 import 'otp_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,11 +26,10 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse("http://172.20.222.144:3000/api/v1/auth/request-otp"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"email": emailCtrl.text, "password": passCtrl.text}),
-      );
+      final response = await ApiService().post("/api/v1/auth/request-otp", {
+        "email": emailCtrl.text,
+        "password": passCtrl.text,
+      });
 
       final data = jsonDecode(response.body);
 
@@ -75,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(25),
+        padding: const EdgeInsets.all(25),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -91,32 +90,32 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 30),
               TextField(
                 controller: emailCtrl,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Email/Nik",
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
               TextField(
                 controller: passCtrl,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Password",
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
               ),
-              SizedBox(height: 25),
+              const SizedBox(height: 25),
 
               // 4. Kondisaun ba Loading Spinner
               _isLoading
-                  ? CircularProgressIndicator() // Hatudu roda dulas
+                  ? const CircularProgressIndicator() // Hatudu roda dulas
                   : ElevatedButton(
                       onPressed: login,
                       style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 50),
                         backgroundColor: Colors.redAccent,
                       ),
-                      child: Text(
+                      child: const Text(
                         "Login",
                         style: TextStyle(
                           fontSize: 16,
