@@ -15,6 +15,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passCtrl = TextEditingController();
+  bool obscurePassword = true;
 
   // 1. Kria variable hodi kontrola loading
   bool _isLoading = false;
@@ -92,17 +93,29 @@ class _LoginPageState extends State<LoginPage> {
                 controller: emailCtrl,
                 decoration: const InputDecoration(
                   labelText: "Email/Nik",
+                  hintText: "prense ita nia email/nik",
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 15),
               TextField(
                 controller: passCtrl,
-                decoration: const InputDecoration(
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
                   labelText: "Password",
-                  border: OutlineInputBorder(),
+                  hintText: "prense ita nia password",
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
                 ),
-                obscureText: true,
               ),
               const SizedBox(height: 25),
 
@@ -114,6 +127,9 @@ class _LoginPageState extends State<LoginPage> {
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
                         backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: const Text(
                         "Login",

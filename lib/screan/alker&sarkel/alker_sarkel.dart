@@ -169,11 +169,13 @@ class DetailAlkerPage extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                // Lójika ba Empresta
+                // Implementasaun fila ba listagem
+                Navigator.pop(context);
               },
-              icon: const Icon(Icons.handshake),
+              icon: const Icon(Icons.door_back_door),
+
               label: const Text(
-                "EMPRESTA SASÁN",
+                "Fila",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),

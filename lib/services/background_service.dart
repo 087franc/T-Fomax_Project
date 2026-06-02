@@ -78,16 +78,13 @@ void onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
-  // Track location every 30 seconds (or 30 minutes as requested?)
-  // User said "more than 30 minutes" but usually tracking is more frequent.
-  // I will use 30 seconds for now, but maybe they meant 30 minutes interval?
-  // Let's stick to a reasonable tracking interval.
-  Timer.periodic(const Duration(seconds: 30), (timer) async {
+  // Check location every 10 seconds, update and send to backend only if user moved >= 10 meters
+  Timer.periodic(const Duration(seconds: 10), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         service.setForegroundNotificationInfo(
           title: "Patrol Active",
-          content: "Updated at ${DateTime.now().hour}:${DateTime.now().minute}",
+          content: "Tracking patrol movement...",
         );
       }
     }
@@ -98,23 +95,53 @@ void onStart(ServiceInstance service) async {
       );
 
       final prefs = await SharedPreferences.getInstance();
-      final String? sessionId = prefs.getString('session_id');
+      
+      // Get the last saved coordinates
+      final double? lastLat = prefs.getDouble('last_latitude');
+      final double? lastLng = prefs.getDouble('last_longitude');
 
-      // Send to server
-      if (sessionId != null) {
-        await ApiService().post("/api/v1/patrol/track", {
-          "session_id": sessionId,
-          "latitude": position.latitude,
-          "longitude": position.longitude,
-          "timestamp": DateTime.now().toIso8601String(),
-        });
+      bool shouldUpdate = false;
+      if (lastLat == null || lastLng == null) {
+        shouldUpdate = true;
+      } else {
+        // Enforce 10 meters distance rule
+        double distance = Geolocator.distanceBetween(
+          lastLat,
+          lastLng,
+          position.latitude,
+          position.longitude,
+        );
+        if (distance >= 10.0) {
+          shouldUpdate = true;
+        }
       }
 
-      // Invoke event to update UI if app is open
-      service.invoke('updateLocation', {
-        "latitude": position.latitude,
-        "longitude": position.longitude,
-      });
+      if (shouldUpdate) {
+        final String timestamp = DateTime.now().toIso8601String();
+        
+        // Immediately store longitude, latitude and timestamp in SharedPreferences
+        await prefs.setDouble('last_latitude', position.latitude);
+        await prefs.setDouble('last_longitude', position.longitude);
+        await prefs.setString('last_timestamp', timestamp);
+
+        final String? sessionId = prefs.getString('session_id');
+
+        // Send to backend
+        if (sessionId != null) {
+          await ApiService().post("/api/v1/patrol/track", {
+            "session_id": sessionId,
+            "latitude": position.latitude,
+            "longitude": position.longitude,
+            "timestamp": timestamp,
+          });
+        }
+
+        // Invoke event to update UI if app is open
+        service.invoke('updateLocation', {
+          "latitude": position.latitude,
+          "longitude": position.longitude,
+        });
+      }
     } catch (e) {
       debugPrint("Error in background service: $e");
     }

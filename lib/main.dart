@@ -6,15 +6,8 @@ import 'login_page.dart';
 import 'home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'services/background_service.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await initializeService();
-  } catch (e) {
-    debugPrint("Background Service failed to initialize: $e");
-  }
   runApp(const MyApp());
 }
 

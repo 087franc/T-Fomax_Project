@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StartPatroliPage extends StatefulWidget {
   const StartPatroliPage({super.key});
@@ -13,9 +14,24 @@ class StartPatroliPage extends StatefulWidget {
 
 class _StartPatroliPageState extends State<StartPatroliPage> {
   // 1. DADUS USER HUSI JSON
-  final String userDataJson =
-      '{"id": "001", "name": "Marcos de Deus", "role": "Field Technician"}';
-  late Map<String, dynamic> user;
+  String name = "";
+  String email = "";
+  String role = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final pref = await SharedPreferences.getInstance();
+    setState(() {
+      name = pref.getString('user_name') ?? "";
+      email = pref.getString('user_email') ?? "";
+      role = pref.getString('user_role') ?? "";
+    });
+  }
 
   final TextEditingController _keteranganController = TextEditingController();
   String? _selectedKategori;
@@ -33,12 +49,6 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
     "Pole Maintenance",
     "Cleaning Site",
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    user = jsonDecode(userDataJson);
-  }
 
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
@@ -147,12 +157,6 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
             _buildPhotoBox(),
             const SizedBox(height: 20),
 
-            // LOKASAUN
-            _buildLabel("Lokasi GPS (*)"),
-            _buildLocationTile(),
-
-            const SizedBox(height: 35),
-
             // BUTAUN SUBMETE
             _buildSubmitButton(),
             const SizedBox(height: 30),
@@ -208,7 +212,7 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
           const Icon(Icons.account_circle, size: 40, color: Color(0xFFED1C24)),
           const SizedBox(width: 12),
           Text(
-            user['name'],
+            name,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
@@ -290,6 +294,12 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
           // HARUKA DADUS BA GOLANG
           print("Blank Spot: $_isBlankSpot, Eskalasi: $_needEscalation");
           _showSuccess();
+          // Delay briefly to allow SnackBar to be seen, then return to PreventivePage
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          });
         },
         child: const Text(
           "SUBMETE PATROLI",

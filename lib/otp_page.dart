@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'services/api_service.dart';
 import 'dart:convert';
@@ -15,6 +16,51 @@ class OTPPage extends StatefulWidget {
 class _OTPPageState extends State<OTPPage> {
   final TextEditingController otpCtrl = TextEditingController();
   bool _isVerifying = false;
+  Timer? _otpTimer;
+  int _remainingSeconds = 5 * 60;
+  bool _otpExpired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startOtpTimer();
+  }
+
+  @override
+  void dispose() {
+    _otpTimer?.cancel();
+    otpCtrl.dispose();
+    super.dispose();
+  }
+
+  void _startOtpTimer() {
+    _otpTimer?.cancel();
+    _remainingSeconds = 5 * 60;
+    _otpExpired = false;
+
+    _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        if (_remainingSeconds > 0) {
+          _remainingSeconds--;
+          if (_remainingSeconds == 0) {
+            _otpExpired = true;
+            timer.cancel();
+          }
+        }
+      });
+    });
+  }
+
+  String get _formattedRemainingTime {
+    final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
 
   Future<void> verifyOTP() async {
     setState(() {
@@ -69,6 +115,8 @@ class _OTPPageState extends State<OTPPage> {
           'login_timestamp',
           DateTime.now().millisecondsSinceEpoch,
         );
+
+        _otpTimer?.cancel();
 
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
@@ -137,6 +185,49 @@ class _OTPPageState extends State<OTPPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14),
                 ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _otpExpired
+                        ? Colors.red.shade50
+                        : Colors.white.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _otpExpired
+                          ? Colors.redAccent
+                          : Colors.redAccent.withOpacity(0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        color: _otpExpired
+                            ? Colors.redAccent
+                            : Colors.redAccent,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _otpExpired
+                            ? "OTP expirado"
+                            : "OTP validu para: $_formattedRemainingTime",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _otpExpired
+                              ? Colors.redAccent
+                              : Colors.redAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: otpCtrl,
                   keyboardType: TextInputType.number,
@@ -159,14 +250,18 @@ class _OTPPageState extends State<OTPPage> {
                         height: 50,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
+                            backgroundColor: _otpExpired
+                                ? Colors.grey
+                                : Colors.redAccent,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: verifyOTP,
-                          child: const Text("VERIFIKA AGORA"),
+                          onPressed: _otpExpired ? null : verifyOTP,
+                          child: Text(
+                            _otpExpired ? "OTP EXPIRED" : "VERIFIKA AGORA",
+                          ),
                         ),
                       ),
               ],

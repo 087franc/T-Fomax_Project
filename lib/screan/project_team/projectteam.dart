@@ -439,7 +439,17 @@ class _ProjectTeamPageState extends State<ProjectTeamPage> {
         team["group_name"] ?? team["naran_projetu"] ?? "Ekipa Foun";
 
     // 2. Resolve Member List (supports API 'group_members' or local 'membru')
-    final List membruList = team["group_members"] ?? team["membru"] ?? [];
+    final List rawList = team["group_members"] ?? team["membru"] ?? [];
+    final List membruList = List.from(rawList);
+    membruList.sort((a, b) {
+      final aRole = (a['role'] ?? a['position'] ?? a['servisu'] ?? '').toString().toLowerCase();
+      final bRole = (b['role'] ?? b['position'] ?? b['servisu'] ?? '').toString().toLowerCase();
+      final aChief = aRole.contains('chief');
+      final bChief = bRole.contains('chief');
+      if (aChief && !bChief) return -1;
+      if (!aChief && bChief) return 1;
+      return 0;
+    });
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -783,7 +793,20 @@ class _ProjectTeamPageState extends State<ProjectTeamPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 15),
-                ...team['membru'].map<Widget>(
+                ...() {
+                  final List rawMembru = team['membru'] ?? [];
+                  final List sortedMembru = List.from(rawMembru);
+                  sortedMembru.sort((a, b) {
+                    final aRole = (a['role'] ?? a['position'] ?? a['servisu'] ?? '').toString().toLowerCase();
+                    final bRole = (b['role'] ?? b['position'] ?? b['servisu'] ?? '').toString().toLowerCase();
+                    final aChief = aRole.contains('chief');
+                    final bChief = bRole.contains('chief');
+                    if (aChief && !bChief) return -1;
+                    if (!aChief && bChief) return 1;
+                    return 0;
+                  });
+                  return sortedMembru;
+                }().map<Widget>(
                   (m) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
