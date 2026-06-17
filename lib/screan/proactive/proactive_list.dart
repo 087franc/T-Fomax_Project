@@ -76,12 +76,57 @@ class _ProactiveListState extends State<ProactiveList> {
   }
 
   Future<void> _submitToBackend(Map<String, dynamic> draft) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentUserId = prefs.getString('user_id') ?? _userId;
+
+    final String description = draft['description']?.toString().trim() ?? "";
+    final String latitude = draft['latitude']?.toString() ?? "";
+    final String longitude = draft['longitude']?.toString() ?? "";
+    final String imagePath = draft['imagePath']?.toString() ?? "";
+    final String postedBy = draft['posted_by']?.toString().isNotEmpty == true
+        ? draft['posted_by'].toString()
+        : currentUserId;
+    final String timestamp =
+        draft['photo_timestamp']?.toString().isNotEmpty == true
+        ? draft['photo_timestamp'].toString()
+        : draft['timestamp']?.toString().isNotEmpty == true
+        ? draft['timestamp'].toString()
+        : DateTime.now().toIso8601String();
+
+    if (description.isEmpty) {
+      _showErrorDialog("Descrisaun nebee halao fali iha form.");
+      return;
+    }
+
+    if (postedBy.isEmpty) {
+      _showErrorDialog("User ID la hetan halo favor login fila fali!.");
+      return;
+    }
+
+    if (latitude.isEmpty || longitude.isEmpty) {
+      _showErrorDialog(
+        "Latitude no longitude la hetan. Favor ativa ita nia Lokasi iha Setting.",
+      );
+      return;
+    }
+
+    if (imagePath.isEmpty) {
+      _showErrorDialog("Favor upload foto ho imagem iha draft!.");
+      return;
+    }
+
     _showLoadingDialog();
     try {
       final response = await ApiService().multipartPost(
         "/api/v1/proactive",
-        fields: {"description": draft['description'], "posted_by": _userId},
-        imageFile: draft['imagePath'] != null ? File(draft['imagePath']) : null,
+        fields: {
+          "description": description,
+          "posted_by": postedBy,
+          "latitude": latitude,
+          "longitude": longitude,
+          "created_at": timestamp,
+        },
+        imageFile: File(imagePath),
         imageField: 'image_profs',
       );
 
@@ -89,12 +134,24 @@ class _ProactiveListState extends State<ProactiveList> {
       Navigator.pop(context); // Close loading dialog
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Success: Remove from pending and refresh
         await _deleteDraft(draft['id']);
         _showSuccessDialog("Susesu", "Proactive submete suksesu ba backend");
         _fetchCombinedList();
       } else {
-        _showErrorDialog("Erro submete: ${response.statusCode}");
+        String message = "Erro submete: ${response.statusCode}";
+        try {
+          final decoded = jsonDecode(responseBody);
+          if (decoded is Map && decoded.containsKey('message')) {
+            message = decoded['message'].toString();
+          } else if (responseBody.isNotEmpty) {
+            message = responseBody;
+          }
+        } catch (_) {
+          if (responseBody.isNotEmpty) {
+            message = responseBody;
+          }
+        }
+        _showErrorDialog(message);
       }
     } catch (e) {
       Navigator.pop(context); // Close loading dialog
@@ -123,12 +180,12 @@ class _ProactiveListState extends State<ProactiveList> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(msg),
+        title: Text(title, style: TextStyle(color: Colors.green)),
+        content: Text(msg, style: TextStyle(color: Colors.black)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: Text("OK", style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -139,12 +196,12 @@ class _ProactiveListState extends State<ProactiveList> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Error"),
-        content: Text(msg),
+        title: const Text("Error", style: TextStyle(color: Colors.redAccent)),
+        content: Text(msg, style: const TextStyle(color: Colors.black)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: const Text("OK", style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -158,9 +215,13 @@ class _ProactiveListState extends State<ProactiveList> {
 
     // Sort by timestamp descending (most recent first)
     combinedList.sort((a, b) {
-      DateTime timeA = DateTime.tryParse(a['timestamp'] ?? '') ?? DateTime(0);
-      DateTime timeB = DateTime.tryParse(b['timestamp'] ?? '') ?? DateTime(0);
-      return timeA.compareTo(timeB);
+      DateTime timeA =
+          DateTime.tryParse(a['timestamp'] ?? a['created_at'] ?? '') ??
+          DateTime(0);
+      DateTime timeB =
+          DateTime.tryParse(b['timestamp'] ?? b['created_at'] ?? '') ??
+          DateTime(0);
+      return timeB.compareTo(timeA);
     });
 
     if (_isLoading && combinedList.isEmpty) {
@@ -197,6 +258,13 @@ class _ProactiveListState extends State<ProactiveList> {
           // Check if it's the current user's submitted item (optional visual hint)
           bool isMyPost = !isPending && item['posted_by'] == _userId;
 
+          final String? latStr =
+              item['latitude']?.toString() ?? item['lat']?.toString();
+          final String? lngStr =
+              item['longitude']?.toString() ??
+              item['lng']?.toString() ??
+              item['long']?.toString();
+
           return Card(
             margin: const EdgeInsets.only(bottom: 20),
             shape: RoundedRectangleBorder(
@@ -219,7 +287,7 @@ class _ProactiveListState extends State<ProactiveList> {
                         children: [
                           Expanded(
                             child: Text(
-                              posterName + (isMyPost ? " (koko)" : ""),
+                              posterName + (isMyPost ? " (unknown)" : ""),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -230,19 +298,68 @@ class _ProactiveListState extends State<ProactiveList> {
                           _buildStatusBadge(isPending),
                         ],
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        item['timestamp'] != null
-                            ? DateFormat(
-                                'dd/MM/yyyy HH:mm',
-                              ).format(DateTime.parse(item['timestamp']))
-                            : "",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                      const SizedBox(height: 8),
+                      // Meta info row: Timestamp & Coordinates
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 6,
+                        children: [
+                          if (item['timestamp'] != null ||
+                              item['created_at'] != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.calendar_month,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  (() {
+                                    final dtStr =
+                                        item['timestamp'] ?? item['created_at'];
+                                    final parsed = DateTime.tryParse(
+                                      dtStr ?? '',
+                                    );
+                                    return parsed != null
+                                        ? DateFormat(
+                                            'dd/MM/yyyy HH:mm',
+                                          ).format(parsed)
+                                        : (dtStr ?? '');
+                                  })(),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (latStr != null &&
+                              latStr.isNotEmpty &&
+                              lngStr != null &&
+                              lngStr.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: Colors.redAccent,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Lat: $latStr, Lng: $lngStr",
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
                         item['description'] ?? "",
                         style: const TextStyle(color: Colors.black87),

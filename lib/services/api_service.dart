@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -69,13 +70,16 @@ class ApiService {
     request.fields.addAll(fields);
 
     if (imageFile != null) {
+      if (!await imageFile.exists()) {
+        throw Exception("Image file not found: ${imageFile.path}");
+      }
       final stream = http.ByteStream(imageFile.openRead());
       final length = await imageFile.length();
       final multipartFile = http.MultipartFile(
         imageField,
         stream,
         length,
-        filename: imageFile.path.split('/').last,
+        filename: path.basename(imageFile.path),
       );
       request.files.add(multipartFile);
     }

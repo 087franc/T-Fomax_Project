@@ -2,10 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'corective.dart';
+import '../../services/api_service.dart';
+import 'dart:convert';
 
 class CorrectiveChatPage extends StatefulWidget {
   final String ticketId;
   final VoidCallback onFinalize;
+
+  static final Map<String, List<Map<String, dynamic>>> allChats = {};
 
   const CorrectiveChatPage({
     super.key,
@@ -20,18 +24,72 @@ class CorrectiveChatPage extends StatefulWidget {
 class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
   final TextEditingController _msgController = TextEditingController();
 
-  // --- KI'IK MAIBÉ IMPORTANTE: STATIC LIST ---
-  // Static halo lista ne'e labele lakon maske ó Navigator.pop()
-  static final Map<String, List<Map<String, dynamic>>> _allChats = {};
+  final String myTeamId = "TEAM-FRANS-01"; // Id Team ne'ebe 'Login'
+  List<dynamic> _ticketList = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Se ticket ne'e seidauk iha istória chat, kria lista foun ida
-    if (!_allChats.containsKey(widget.ticketId)) {
-      _allChats[widget.ticketId] = [];
+    _loadData();
+    if (!CorrectiveChatPage.allChats.containsKey(widget.ticketId)) {
+      CorrectiveChatPage.allChats[widget.ticketId] = [];
     }
   }
+
+  // --- 1. LOAD DATA HO BACKEND ---
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiService().get("/api/v1/ticket");
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        setState(() {
+          if (decoded is List) {
+            _ticketList = decoded;
+          } else if (decoded is Map) {
+            var dataVal = decoded['data'];
+            if (dataVal is List) {
+              _ticketList = dataVal;
+            } else if (dataVal is Map && dataVal.containsKey('data')) {
+              var innerData = dataVal['data'];
+              if (innerData is List) {
+                _ticketList = innerData;
+              } else {
+                _ticketList = [];
+              }
+            } else {
+              _ticketList = [];
+            }
+          } else {
+            _ticketList = [];
+          }
+        });
+      } else {
+        _showSnackBarError("Erro foti dadus chat: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error loading chat ticket: $e");
+      _showSnackBarError("Erro koneksaun: Network is unreachable");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showSnackBarError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  // --- KI'IK MAIBÉ IMPORTANTE: STATIC LIST ---
+  // Static halo lista ne'e labele lakon maske ó Navigator.pop()
 
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
@@ -42,7 +100,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
 
     if (photo != null) {
       setState(() {
-        _allChats[widget.ticketId]!.add({
+        CorrectiveChatPage.allChats[widget.ticketId]!.add({
           "user": "Me",
           "type": "image",
           "content": File(photo.path),
@@ -55,7 +113,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
   void _sendMessage() {
     if (_msgController.text.isNotEmpty) {
       setState(() {
-        _allChats[widget.ticketId]!.add({
+        CorrectiveChatPage.allChats[widget.ticketId]!.add({
           "user": "Me",
           "type": "text",
           "content": _msgController.text,
@@ -69,7 +127,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
   @override
   Widget build(BuildContext context) {
     // Foti chat sira ne'ebé iha ona
-    final messages = _allChats[widget.ticketId] ?? [];
+    final messages = CorrectiveChatPage.allChats[widget.ticketId] ?? [];
 
     return Scaffold(
       appBar: AppBar(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
+// import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 
 class ProactiveForm extends StatefulWidget {
@@ -21,18 +23,80 @@ class _ProactiveFormState extends State<ProactiveForm> {
   String? _networkImageUrl;
   bool _isLoading = false;
   String _userId = "";
+  String? _photoTimestamp;
+  Position? _currentPosition;
 
   @override
   void initState() {
     super.initState();
+
+    _getHiddenLocation();
+
     _loadUserData();
     if (widget.editData != null) {
       _deskripsiController.text = widget.editData!['description'] ?? "";
       if (widget.editData!['imagePath'] != null) {
         _imageFile = File(widget.editData!['imagePath']);
-      } else if (widget.editData!['image_url'] != null || widget.editData!['image_profs'] != null) {
-        _networkImageUrl = widget.editData!['image_url'] ?? widget.editData!['image_profs'];
+      } else if (widget.editData!['image_url'] != null ||
+          widget.editData!['image_profs'] != null) {
+        _networkImageUrl =
+            widget.editData!['image_url'] ?? widget.editData!['image_profs'];
       }
+
+      _photoTimestamp =
+          widget.editData!['photo_timestamp'] ?? widget.editData!['timestamp'];
+      if (widget.editData!['latitude'] != null &&
+          widget.editData!['longitude'] != null) {
+        final double? lat = double.tryParse(
+          widget.editData!['latitude'].toString(),
+        );
+        final double? lng = double.tryParse(
+          widget.editData!['longitude'].toString(),
+        );
+        if (lat != null && lng != null) {
+          _currentPosition = Position(
+            latitude: lat,
+            longitude: lng,
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            heading: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
+            altitudeAccuracy: 0.0,
+            headingAccuracy: 0.0,
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _getHiddenLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint("Location services are disabled.");
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+        setState(() {
+          _currentPosition = pos;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error getting location: $e");
     }
   }
 
@@ -54,14 +118,20 @@ class _ProactiveFormState extends State<ProactiveForm> {
           ? jsonDecode(pendingJson)
           : [];
 
+      _photoTimestamp ??= DateTime.now().toIso8601String();
+
       Map<String, dynamic> draft = {
         'id':
             widget.editData?['id'] ??
             DateTime.now().millisecondsSinceEpoch.toString(),
         'description': _deskripsiController.text,
         'imagePath': _imageFile?.path,
-        'timestamp': DateTime.now().toIso8601String(),
         'status': 'Pending',
+        'latitude': _currentPosition?.latitude,
+        'longitude': _currentPosition?.longitude,
+        'posted_by': _userId,
+        'timestamp': _photoTimestamp,
+        'photo_timestamp': _photoTimestamp,
       };
 
       if (widget.editData != null) {
@@ -111,11 +181,30 @@ class _ProactiveFormState extends State<ProactiveForm> {
         setState(() {
           _imageFile = File(pickedFile.path);
           _networkImageUrl = null; // Clear network image if a new one is picked
+          _photoTimestamp = DateTime.now().toIso8601String();
         });
+        await _getHiddenLocation();
       }
     } catch (e) {
       debugPrint("Erru loke kamera: $e");
     }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.redAccent),
+            SizedBox(height: 20),
+            Text("Sedang mengambil lokasi..."),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -190,6 +279,27 @@ class _ProactiveFormState extends State<ProactiveForm> {
                           return;
                         }
 
+                        if (_currentPosition == null) {
+                          _showLoadingDialog();
+                          await _getHiddenLocation();
+                          if (mounted)
+                            Navigator.pop(context); // Close loading dialog
+                        }
+
+                        if (_currentPosition == null) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Favor Hamoris Ita nia Lokasi Telfone!",
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
                         await _saveAsDraft();
                       },
                 style: ElevatedButton.styleFrom(
@@ -218,7 +328,12 @@ class _ProactiveFormState extends State<ProactiveForm> {
 
   Widget _buildImagePreview() {
     if (_imageFile != null) {
-      return Image.file(_imageFile!, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
+      return Image.file(
+        _imageFile!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
     } else if (_networkImageUrl != null && _networkImageUrl!.isNotEmpty) {
       return Image.network(
         _formatImageUrl(_networkImageUrl!),

@@ -95,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: "Email/Nik",
                   hintText: "prense ita nia email/nik",
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
                 ),
               ),
               const SizedBox(height: 15),
@@ -105,6 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: "Password",
                   hintText: "prense ita nia password",
                   border: const OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
                       obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -125,10 +127,10 @@ class _LoginPageState extends State<LoginPage> {
                   : ElevatedButton(
                       onPressed: login,
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 45),
                         backgroundColor: Colors.redAccent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                       child: const Text(
