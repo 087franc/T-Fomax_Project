@@ -1,11 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'chat_team.dart';
+import '/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TicketDetailPage extends StatefulWidget {
   final Map<String, dynamic> ticket;
   final String myTeamId;
   final VoidCallback onClaim;
   final VoidCallback onFinalize;
+  final String _userId;
+  final String _sessionToken;
 
   const TicketDetailPage({
     super.key,
@@ -13,7 +18,10 @@ class TicketDetailPage extends StatefulWidget {
     required this.myTeamId,
     required this.onClaim,
     required this.onFinalize,
-  });
+    required String userId,
+    required String sessionToken,
+  }) : _userId = userId,
+       _sessionToken = sessionToken;
 
   @override
   State<TicketDetailPage> createState() => _TicketDetailPageState();
@@ -21,11 +29,26 @@ class TicketDetailPage extends StatefulWidget {
 
 class _TicketDetailPageState extends State<TicketDetailPage> {
   late Map<String, dynamic> _ticket;
+  String _ticketUserId = "";
 
   @override
   void initState() {
     super.initState();
     _ticket = widget.ticket;
+    _loadTicketUserId();
+  }
+
+  Future<void> _loadTicketUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _ticketUserId = prefs.getString('ticket_user_id') ?? '';
+        });
+      }
+    } catch (e) {
+      print("Error loading ticket user id: $e");
+    }
   }
 
   void _handleClaim() {
@@ -74,121 +97,206 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     );
   }
 
-  void _showClaimSetupDialog() {
-    final TextEditingController teamController = TextEditingController();
-    final TextEditingController messageController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+  // endpoint foti ticket id husi database ticket nian
+  Future<void> _showClaimSetupDialog() async {
+    final ticketId =
+        _ticket['id']?.toString() ??
+        _ticket['data']?['id']?.toString() ??
+        'No ID';
 
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('user_email') ?? '';
+
+      dynamic ticketUserId;
+      if (email.isNotEmpty) {
+        try {
+          final userResponse = await ApiService().get(
+            "/api/v1/tickets/user-id?email=$email",
+          );
+          if (userResponse.statusCode == 200) {
+            final decoded = jsonDecode(userResponse.body);
+            if (decoded is Map) {
+              var val = decoded['user_id'] ?? decoded['id'];
+              if (val == null && decoded['data'] != null) {
+                var data = decoded['data'];
+                if (data is Map) {
+                  val = data['user_id'] ?? data['id'];
+                } else {
+                  val = data;
+                }
+              }
+              if (val != null) {
+                ticketUserId = int.tryParse(val.toString()) ?? val;
+                await prefs.setString(
+                  'ticket_user_id',
+                  ticketUserId.toString(),
+                );
+                if (mounted) {
+                  setState(() {
+                    _ticketUserId = ticketUserId.toString();
+                  });
+                }
+              }
+            } else {
+              ticketUserId = int.tryParse(decoded.toString()) ?? decoded;
+              await prefs.setString('ticket_user_id', ticketUserId.toString());
+              if (mounted) {
+                setState(() {
+                  _ticketUserId = ticketUserId.toString();
+                });
+              }
+            }
+          }
+        } catch (e) {
+          print("Error fetching ticket user id: $e");
+        }
+      }
+
+      //depois de foti ticket id husi database ticket depois post no assign fali ba database seluk
+
+      //endpoint hodi assign ticket
+
+      final finalUserId =
+          ticketUserId ?? int.tryParse(widget._userId) ?? widget._userId;
+
+      final Map<String, dynamic> assignBody = {"assigned_to": finalUserId};
+
+      print("assignBody: $assignBody");
+
+      final assignResponse = await ApiService().post(
+        "/api/v1/tickets/$ticketId/assign",
+        assignBody,
+      );
+
+      print(
+        "Assign response: ${assignResponse.statusCode} - ${assignResponse.body}",
+      );
+
+      if (assignResponse.statusCode == 200 ||
+          assignResponse.statusCode == 201) {
+        final Map<String, dynamic> statusBody = {"status": 1};
+
+        print("statusBody: $statusBody");
+
+        //endpoint hodi update status ticket
+        // muda status iha fali database seluk ne'e mak id 1
+
+        final statusResponse = await ApiService().patch(
+          "/api/v1/tickets/$ticketId/status",
+          statusBody,
+        );
+
+        print(
+          "Status patch response: ${statusResponse.statusCode} - ${statusResponse.body}",
+        );
+
+        if (statusResponse.statusCode == 200 ||
+            statusResponse.statusCode == 201) {
+          setState(() {
+            _ticket['status'] = "PROGRESS";
+            _ticket['claimed_by'] = widget.myTeamId;
+            _ticket['assigned_to'] = finalUserId.toString();
+          });
+
+          widget.onClaim();
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Ticket assigned and status updated successfully"),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CorrectiveChatPage(
+                ticketId: ticketId,
+                onFinalize: () {
+                  setState(() {
+                    _ticket['status'] = "SOLVED";
+                  });
+                  widget.onFinalize();
+                },
+              ),
+            ),
+          );
+        } else {
+          String errorMessage =
+              "Failed to update status: Status ${statusResponse.statusCode}";
+
+          try {
+            final decoded = jsonDecode(statusResponse.body);
+            if (decoded is Map && decoded.containsKey('message')) {
+              errorMessage = decoded['message'].toString();
+            } else if (decoded is Map && decoded.containsKey('error')) {
+              errorMessage = decoded['error'].toString();
+            } else if (statusResponse.body.isNotEmpty) {
+              errorMessage = statusResponse.body;
+            }
+          } catch (_) {
+            if (statusResponse.body.isNotEmpty) {
+              errorMessage = statusResponse.body;
+            }
+          }
+
+          debugPrint("Status error response: ${statusResponse.body}");
+          _showSnackBar(errorMessage, Colors.white);
+        }
+      } else {
+        String errorMessage =
+            "Failed to claim ticket: Status ${assignResponse.statusCode}";
+
+        try {
+          final decoded = jsonDecode(assignResponse.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMessage = decoded['message'].toString();
+          } else if (decoded is Map && decoded.containsKey('error')) {
+            errorMessage = decoded['error'].toString();
+          } else if (assignResponse.body.isNotEmpty) {
+            errorMessage = assignResponse.body;
+          }
+        } catch (_) {
+          if (assignResponse.body.isNotEmpty) {
+            errorMessage = assignResponse.body;
+          }
+        }
+
+        debugPrint("Assign error response: ${assignResponse.body}");
+        _showSnackBar(errorMessage, Colors.white);
+      }
+    } catch (e) {
+      debugPrint("Assign exception: $e");
+      _showSnackBar("Error: ${e.toString()}", Colors.white);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Row(
           children: [
-            Icon(Icons.people_outline, color: Colors.blueAccent),
+            Icon(Icons.info, color: Colors.blueAccent),
             SizedBox(width: 10),
-            Text("Resolve Setup"),
+            Text("Info"),
           ],
         ),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Preenxe dadus ekipa no mensajen primeiru hodi claim ticket ne'e:",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-                const SizedBox(height: 15),
-                TextFormField(
-                  controller: teamController,
-                  decoration: const InputDecoration(
-                    labelText: "Ekipa / Membru (Team Members)",
-                    hintText: "p.e. Ramos, Kokoa",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.people),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Favor preenxe naran membru ekipa";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 15),
-                TextFormField(
-                  controller: messageController,
-                  decoration: const InputDecoration(
-                    labelText: "Mensajen Foun (Chat Message)",
-                    hintText: "p.e. Ami atu ba check fibra...",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.chat),
-                  ),
-                  maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Favor preenxe mensajen foun";
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
+        content: Text(message),
+        backgroundColor: color,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Kansela", style: TextStyle(color: Colors.grey)),
-          ),
           ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                final String teamStr = teamController.text.trim();
-                final String msgStr = messageController.text.trim();
-                Navigator.pop(context);
-
-                setState(() {
-                  _ticket['status'] = "ON PROCESS";
-                  _ticket['claimed_by'] = widget.myTeamId;
-                  _ticket['team_members'] = teamStr;
-                });
-                widget.onClaim();
-
-                final ticketId =
-                    _ticket['id']?.toString() ??
-                    _ticket['data']?['id']?.toString() ??
-                    'No ID';
-                if (!CorrectiveChatPage.allChats.containsKey(ticketId)) {
-                  CorrectiveChatPage.allChats[ticketId] = [];
-                }
-
-                CorrectiveChatPage.allChats[ticketId]!.add({
-                  "user": "System",
-                  "type": "text",
-                  "content": "Ekipa servisu: $teamStr",
-                  "time": DateTime.now().toString().substring(11, 16),
-                });
-
-                CorrectiveChatPage.allChats[ticketId]!.add({
-                  "user": "Me",
-                  "type": "text",
-                  "content": msgStr,
-                  "time": DateTime.now().toString().substring(11, 16),
-                });
-
-                _navigateToChat();
-              }
-            },
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Ok", style: TextStyle(color: Colors.white)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
+              backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text("Submete", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -217,6 +325,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("TICKET DATA ON BUILD: $_ticket");
     var tData = _ticket['data'] is Map ? _ticket['data'] : {};
     String ticketId =
         tData['id']?.toString() ?? _ticket['id']?.toString() ?? 'No ID';
@@ -238,11 +347,42 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
         _ticket['status']?.toString() ??
         _ticket['ticket_status']?.toString() ??
         'OPEN';
-    String claimedBy = _ticket['claimed_by']?.toString() ?? '';
+    String displayStatus = status;
+    if (status == "0" || status.toUpperCase() == "OPEN") {
+      displayStatus = "OPEN";
+    } else if (status == "1" ||
+        status.toUpperCase() == "PROGRESS" ||
+        status.toUpperCase() == "ON PROCESS") {
+      displayStatus = "PROGRESS";
+    } else if (status == "2" || status.toUpperCase() == "CANCELED") {
+      displayStatus = "CANCELED";
+    } else if (status == "3" || status.toUpperCase() == "ON HOLD") {
+      displayStatus = "ON HOLD";
+    } else if (status == "4" || status.toUpperCase() == "CLOSED") {
+      displayStatus = "CLOSED";
+    } else if (status == "5" ||
+        status.toUpperCase() == "RESOLVED" ||
+        status.toUpperCase() == "SOLVED") {
+      displayStatus = "RESOLVED";
+    } else if (status == "6" || status.toUpperCase() == "RE OPEN") {
+      displayStatus = "RE OPEN";
+    }
 
-    bool isOpen = status == "OPEN";
-    bool isSOLVED = status == "SOLVED";
-    bool isMyTicket = claimedBy == widget.myTeamId;
+    String claimedBy =
+        tData['claimed_by']?.toString() ??
+        _ticket['claimed_by']?.toString() ??
+        '';
+    String assignedTo =
+        tData['assigned_to']?.toString() ??
+        _ticket['assigned_to']?.toString() ??
+        '';
+
+    bool isOpen = displayStatus == "OPEN";
+    bool isSOLVED = displayStatus == "RESOLVED";
+    bool isMyTicket =
+        claimedBy == widget.myTeamId ||
+        (assignedTo.isNotEmpty &&
+            (assignedTo == widget._userId || assignedTo == _ticketUserId));
 
     Color statusColor;
     if (isSOLVED) {
@@ -306,7 +446,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                           border: Border.all(color: statusColor),
                         ),
                         child: Text(
-                          status,
+                          displayStatus,
                           style: TextStyle(
                             color: statusColor,
                             fontWeight: FontWeight.bold,

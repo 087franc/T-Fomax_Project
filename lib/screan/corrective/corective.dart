@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'chat_team.dart';
+// import 'chat_team.dart';
 import 'ticket_detail.dart';
 import '/services/api_service.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
 import '/home_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CorrectivePage extends StatefulWidget {
   const CorrectivePage({super.key});
@@ -18,6 +19,8 @@ class _CorrectivePageState extends State<CorrectivePage> {
   final String myTeamId = "TEAM-FRANS-01";
   List<dynamic> _ticketList = [];
   bool _isLoading = false;
+  String _userId = "";
+  String _sessionToken = "";
 
   // SEARCH FUNCTIONALITY VARIABLES
   bool _isSearching = false;
@@ -42,6 +45,14 @@ class _CorrectivePageState extends State<CorrectivePage> {
   }
 
   Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _userId = prefs.getString('user_id') ?? '';
+        _sessionToken = prefs.getString('session_token') ?? '';
+      });
+    }
+
     await _fetchticketList();
   }
 
@@ -70,6 +81,7 @@ class _CorrectivePageState extends State<CorrectivePage> {
         } else {
           _ticketList = [];
         }
+        print("TICKET LIST FROM SERVER: $_ticketList");
       } else {
         _showErrorSnackBar("Erro foti dadus: ${response.statusCode}");
       }
@@ -129,10 +141,13 @@ class _CorrectivePageState extends State<CorrectivePage> {
         builder: (context) => TicketDetailPage(
           ticket: ticket,
           myTeamId: myTeamId,
+          userId: _userId,
+          sessionToken: _sessionToken,
           onClaim: () {
             setState(() {
               ticket['status'] = "ON PROCESS";
-              ticket['claimed_by'] = myTeamId;
+              // ticket['claimed_by'] = myTeamId;
+              ticket['assigned_to'] = _userId;
             });
           },
           onFinalize: () {
@@ -187,73 +202,96 @@ class _CorrectivePageState extends State<CorrectivePage> {
   //   );
   // }
 
-  void _handleAction(int index) {
-    if (_ticketList[index]['status'] == "OPEN") {
-      _confirmClaim(index);
-    } else if (_ticketList[index]['status'] == "ON PROCESS") {
-      if (_ticketList[index]['claimed_by'] == myTeamId) {
-        _navigateToChat(index, _ticketList[index]['id']);
-      } else {
-        _showAccessDenied();
-      }
-    }
-  }
+  // void _handleAction(int index) {
+  //   var t = _ticketList[index];
+  //   var tData = t['data'] is Map ? t['data'] : {};
+  //   String claimedBy =
+  //       tData['claimed_by']?.toString() ?? t['claimed_by']?.toString() ?? '';
+  //   String assignedTo =
+  //       tData['assigned_to']?.toString() ?? t['assigned_to']?.toString() ?? '';
+  //   bool isMyTicket =
+  //       claimedBy == myTeamId ||
+  //       (assignedTo.isNotEmpty && assignedTo == _userId);
 
-  void _confirmClaim(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Claim Ticket?"),
-        content: const Text(
-          "Ita ho ita-nia tim sei foti responsabilidade ba ticket ne'e?",
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-            child: const Text("Kansela"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _ticketList[index]['status'] = "ON PROCESS";
-                _ticketList[index]['claimed_by'] = myTeamId; // REJISTA NA'IN
-              });
-              Navigator.pop(context);
-              _navigateToChat(index, _ticketList[index]['id']);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text("Claim Ticket"),
-          ),
-        ],
-      ),
-    );
-  }
+  //   String statusRaw = t['status']?.toString() ?? '';
+  //   String displayStatus = statusRaw;
+  //   if (statusRaw == "0" || statusRaw.toUpperCase() == "OPEN") {
+  //     displayStatus = "OPEN";
+  //   } else if (statusRaw == "1" ||
+  //       statusRaw.toUpperCase() == "PROGRESS" ||
+  //       statusRaw.toUpperCase() == "ON PROCESS") {
+  //     displayStatus = "PROGRESS";
+  //   }
 
-  void _navigateToChat(int index, String ticketId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CorrectiveChatPage(
-          ticketId: ticketId,
-          onFinalize: () {
-            setState(() {
-              _ticketList[index]['status'] = "SOLVED";
-            });
-          },
-        ),
-      ),
-    );
-  }
+  //   if (displayStatus == "OPEN") {
+  //     _confirmClaim(index);
+  //   } else if (displayStatus == "PROGRESS") {
+  //     if (isMyTicket) {
+  //       _navigateToChat(
+  //         index,
+  //         tData['id']?.toString() ?? t['id']?.toString() ?? '',
+  //       );
+  //     } else {
+  //       _showAccessDenied();
+  //     }
+  //   }
+  // }
 
-  void _showAccessDenied() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Failha! Ticket ne'e ema seluk mak claim ona."),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
+  // void _confirmClaim(int index) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text("Claim Ticket?"),
+  //       content: const Text(
+  //         "Ita ho ita-nia tim sei foti responsabilidade ba ticket ne'e?",
+  //       ),
+  //       actions: [
+  //         ElevatedButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+  //           child: const Text("Kansela"),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             setState(() {
+  //               _ticketList[index]['status'] = "ON PROCESS";
+  //               _ticketList[index]['claimed_by'] = myTeamId; // REJISTA NA'IN
+  //             });
+  //             Navigator.pop(context);
+  //             _navigateToChat(index, _ticketList[index]['id']);
+  //           },
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+  //           child: const Text("Claim Ticket"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // void _navigateToChat(int index, String ticketId) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => CorrectiveChatPage(
+  //         ticketId: ticketId,
+  //         onFinalize: () {
+  //           setState(() {
+  //             _ticketList[index]['status'] = "SOLVED";
+  //           });
+  //         },
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // void _showAccessDenied() {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //       content: Text("Failha! Ticket ne'e ema seluk mak claim ona."),
+  //       backgroundColor: Colors.red,
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -335,8 +373,36 @@ class _CorrectivePageState extends State<CorrectivePage> {
                       itemBuilder: (context, index) {
                         var t = tickets[index];
                         bool isMyTicket = t['claimed_by'] == myTeamId;
-                        bool isOpen = t['status'] == "OPEN";
-                        bool isSOLVED = t['status'] == "SOLVED";
+
+                        String statusRaw = t['status']?.toString() ?? '';
+                        String displayStatus = statusRaw;
+                        if (statusRaw == "0" ||
+                            statusRaw.toUpperCase() == "OPEN") {
+                          displayStatus = "OPEN";
+                        } else if (statusRaw == "1" ||
+                            statusRaw.toUpperCase() == "PROGRESS" ||
+                            statusRaw.toUpperCase() == "ON PROCESS") {
+                          displayStatus = "PROGRESS";
+                        } else if (statusRaw == "2" ||
+                            statusRaw.toUpperCase() == "CANCELED") {
+                          displayStatus = "CANCELED";
+                        } else if (statusRaw == "3" ||
+                            statusRaw.toUpperCase() == "ON HOLD") {
+                          displayStatus = "ON HOLD";
+                        } else if (statusRaw == "4" ||
+                            statusRaw.toUpperCase() == "CLOSED") {
+                          displayStatus = "CLOSED";
+                        } else if (statusRaw == "5" ||
+                            statusRaw.toUpperCase() == "RESOLVED" ||
+                            statusRaw.toUpperCase() == "SOLVED") {
+                          displayStatus = "RESOLVED";
+                        } else if (statusRaw == "6" ||
+                            statusRaw.toUpperCase() == "RE OPEN") {
+                          displayStatus = "RE OPEN";
+                        }
+
+                        bool isOpen = displayStatus == "OPEN";
+                        bool isSOLVED = displayStatus == "RESOLVED";
 
                         var tData = t['data'] is Map ? t['data'] : {};
                         String ticketId =
@@ -363,7 +429,7 @@ class _CorrectivePageState extends State<CorrectivePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "${t['title'] ?? ''}\nStatus: ${t['status'] ?? ''}",
+                                  "${t['title'] ?? ''}\nStatus: $displayStatus",
                                   style: TextStyle(
                                     color: isSOLVED
                                         ? Colors.grey

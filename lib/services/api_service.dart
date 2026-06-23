@@ -22,7 +22,8 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('session_token') ?? "";
     return {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=UTF-8",
+      "Accept": "application/json",
       if (token.isNotEmpty) "Authorization": "Bearer $token",
     };
   }
@@ -40,6 +41,14 @@ class ApiService {
     final url = Uri.parse("$baseUrl$endpoint");
     return await http
         .post(url, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 30));
+  }
+
+  Future<http.Response> patch(String endpoint, Map<String, dynamic> body) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse("$baseUrl$endpoint");
+    return await http
+        .patch(url, headers: headers, body: jsonEncode(body))
         .timeout(const Duration(seconds: 30));
   }
 

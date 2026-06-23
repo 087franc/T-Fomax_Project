@@ -81,10 +81,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
   void _showSnackBarError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -164,7 +161,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
                           // Se hakarak hamoos chat wainhira finalize:
                           // _allChats.remove(widget.ticketId);
                           Navigator.pop(context);
-                          _navigateBackToList();
+                          _handleFinalize();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
@@ -200,12 +197,58 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
     );
   }
 
-  void _navigateBackToList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CorrectivePage()),
+  void _handleFinalize() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 10),
+            Text("Finalize Ticket?"),
+          ],
+        ),
+        content: const Text(
+          "Ita Fiar duni atu finaliza ticket ne?",
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Kansela", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // _showFinalizeSetupDialog();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("Yes", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
+  //  void _showFinalizeSetupDialog() {
+  //   ApiService().post("/api/v1/tickets/${_ticket['id']}/solve", {
+  //     "status": "SOLVED",
+  //   });
+
+  //   _showSnackBar("Ticket Finalize Ho Ita-nia Ekipa", Colors.green);
+  // }
 
   Widget _buildChatBubble(Map<String, dynamic> m) {
     return Align(
