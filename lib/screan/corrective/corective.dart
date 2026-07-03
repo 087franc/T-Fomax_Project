@@ -160,139 +160,6 @@ class _CorrectivePageState extends State<CorrectivePage> {
     );
   }
 
-  // String _getStatusColor(String status) {
-  //   switch (status.toUpperCase()) {
-  //     case 'OPEN':
-  //       return 'red'; // Vermelho
-  //     case 'ON PROCESS':
-  //       return 'orange'; // Laranja
-  //     case 'SOLVED':
-  //       return 'green'; // Verde
-  //     default:
-  //       return 'blue'; // Outros (Azul)
-  //   }
-  // }
-  //
-  // Future<void> _claimTicket(String ticketId, String teamId) async {
-  //   try {
-  //     final response = await http.post(
-  //       Uri.parse('http://[IP_ADDRESS]/api/v1/ticket/$ticketId/claim'),
-  //       headers: {'Content-Type': 'application/json'},
-  //       body: jsonEncode({'team_id': teamId}),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       setState(() {}); // Refresh UI
-  //       print('Ticket claim successful');
-  //     } else {
-  //       print('Failed to claim ticket: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     print('Error claiming ticket: $e');
-  //   }
-  // }
-
-  // void _navigateToChat(String ticketId, int index) {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) =>
-  //           CorrectiveChatPage(ticketId: ticketId, onFinalize: () {}),
-  //     ),
-  //   );
-  // }
-
-  // void _handleAction(int index) {
-  //   var t = _ticketList[index];
-  //   var tData = t['data'] is Map ? t['data'] : {};
-  //   String claimedBy =
-  //       tData['claimed_by']?.toString() ?? t['claimed_by']?.toString() ?? '';
-  //   String assignedTo =
-  //       tData['assigned_to']?.toString() ?? t['assigned_to']?.toString() ?? '';
-  //   bool isMyTicket =
-  //       claimedBy == myTeamId ||
-  //       (assignedTo.isNotEmpty && assignedTo == _userId);
-
-  //   String statusRaw = t['status']?.toString() ?? '';
-  //   String displayStatus = statusRaw;
-  //   if (statusRaw == "0" || statusRaw.toUpperCase() == "OPEN") {
-  //     displayStatus = "OPEN";
-  //   } else if (statusRaw == "1" ||
-  //       statusRaw.toUpperCase() == "PROGRESS" ||
-  //       statusRaw.toUpperCase() == "ON PROCESS") {
-  //     displayStatus = "PROGRESS";
-  //   }
-
-  //   if (displayStatus == "OPEN") {
-  //     _confirmClaim(index);
-  //   } else if (displayStatus == "PROGRESS") {
-  //     if (isMyTicket) {
-  //       _navigateToChat(
-  //         index,
-  //         tData['id']?.toString() ?? t['id']?.toString() ?? '',
-  //       );
-  //     } else {
-  //       _showAccessDenied();
-  //     }
-  //   }
-  // }
-
-  // void _confirmClaim(int index) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text("Claim Ticket?"),
-  //       content: const Text(
-  //         "Ita ho ita-nia tim sei foti responsabilidade ba ticket ne'e?",
-  //       ),
-  //       actions: [
-  //         ElevatedButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-  //           child: const Text("Kansela"),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             setState(() {
-  //               _ticketList[index]['status'] = "ON PROCESS";
-  //               _ticketList[index]['claimed_by'] = myTeamId; // REJISTA NA'IN
-  //             });
-  //             Navigator.pop(context);
-  //             _navigateToChat(index, _ticketList[index]['id']);
-  //           },
-  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-  //           child: const Text("Claim Ticket"),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // void _navigateToChat(int index, String ticketId) {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => CorrectiveChatPage(
-  //         ticketId: ticketId,
-  //         onFinalize: () {
-  //           setState(() {
-  //             _ticketList[index]['status'] = "SOLVED";
-  //           });
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // void _showAccessDenied() {
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Text("Failha! Ticket ne'e ema seluk mak claim ona."),
-  //       backgroundColor: Colors.red,
-  //     ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     final tickets = _filteredTickets;
@@ -311,7 +178,10 @@ class _CorrectivePageState extends State<CorrectivePage> {
                   border: InputBorder.none,
                 ),
               )
-            : const Text("Korektivu", style: TextStyle(color: Colors.white)),
+            : const Text(
+                "Lista Ticketing",
+                style: TextStyle(color: Colors.white),
+              ),
         backgroundColor: Colors.redAccent,
         leading: _isSearching
             ? IconButton(
@@ -402,13 +272,18 @@ class _CorrectivePageState extends State<CorrectivePage> {
                         }
 
                         bool isOpen = displayStatus == "OPEN";
-                        bool isSOLVED = displayStatus == "RESOLVED";
+                        bool isClosed = displayStatus == "CLOSED";
 
                         var tData = t['data'] is Map ? t['data'] : {};
+                        String ticketTitle =
+                            tData['ticket_title']?.toString() ??
+                            t['ticket_title']?.toString() ??
+                            'No ID';
                         String ticketId =
                             tData['id']?.toString() ??
                             t['id']?.toString() ??
                             'No ID';
+
                         String trackingNo =
                             tData['tracking_no']?.toString() ?? '';
                         String corporateName =
@@ -419,11 +294,17 @@ class _CorrectivePageState extends State<CorrectivePage> {
                           margin: const EdgeInsets.only(bottom: 10),
                           child: ListTile(
                             onTap: () => _openDetailPage(t),
-                            title: Text(
-                              ticketId,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  ticketTitle,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(ticketId, style: TextStyle(fontSize: 12)),
+                              ],
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,7 +312,7 @@ class _CorrectivePageState extends State<CorrectivePage> {
                                 Text(
                                   "${t['title'] ?? ''}\nStatus: $displayStatus",
                                   style: TextStyle(
-                                    color: isSOLVED
+                                    color: isClosed
                                         ? Colors.grey
                                         : (isOpen
                                               ? Colors.blue

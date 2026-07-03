@@ -51,53 +51,8 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     }
   }
 
-  void _handleClaim() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Row(
-          children: [
-            Icon(Icons.assignment_turned_in, color: Colors.blueAccent),
-            SizedBox(width: 10),
-            Text("Claim Ticket?"),
-          ],
-        ),
-        content: const Text(
-          "Ita ho ita-nia tim prontu resolve ticket ne'e?",
-          style: TextStyle(fontSize: 15),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Kansela", style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showClaimSetupDialog();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text("Yes", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   // endpoint foti ticket id husi database ticket nian
+  // tenke foti ticket id mak foin bele claim
   Future<void> _showClaimSetupDialog() async {
     final ticketId =
         _ticket['id']?.toString() ??
@@ -319,6 +274,53 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
             widget.onFinalize();
           },
         ),
+      ),
+    );
+  }
+
+  // handle Claim
+  void _handleClaim() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Row(
+          children: [
+            Icon(Icons.assignment_turned_in, color: Colors.blueAccent),
+            SizedBox(width: 10),
+            Text("Claim Ticket?"),
+          ],
+        ),
+        content: const Text(
+          "Ita ho ita-nia tim prontu resolve ticket ne'e?",
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Kansela", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showClaimSetupDialog();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("Yes", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

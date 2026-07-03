@@ -1,3 +1,4 @@
+import 'package:T_Fomax/screan/corrective/corective.dart';
 import 'package:flutter/material.dart';
 import '../../data/database_helper.dart';
 // import 'package:geolocator/geolocator.dart';
@@ -203,22 +204,10 @@ class _PreventivePageState extends State<PreventivePage> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {
-              if (value == 'list') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const PreventiveListPage(),
-                  ),
-                );
-              } else if (value == 'lista Patroli') {
-                // Mensajen temporáriu ba menu seluk
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const PatrolMapPage(),
-                  ),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CorrectivePage()),
+              );
             },
             itemBuilder: (BuildContext context) => [
               const PopupMenuItem(

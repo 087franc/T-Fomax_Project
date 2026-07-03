@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'presence_history.dart';
 
 class PresensiPage extends StatefulWidget {
   const PresensiPage({super.key});
@@ -22,8 +23,6 @@ class _PresensiPageState extends State<PresensiPage> {
   final TextEditingController _lateReasonController = TextEditingController();
   // Location is hidden - stored but not displayed in UI
   Position? _currentPosition;
-  bool _isHealthFormVisible = false; // Track health form visibility
-  bool _isPhotoFormVisible = false; // Track photo form visibility
   bool _isLoading = false; // Loading state for API calls
 
   // User ID and Token from login
@@ -463,13 +462,6 @@ class _PresensiPageState extends State<PresensiPage> {
     );
   }
 
-  // Toggle health form visibility - returns to main presence page
-  void _toggleHealthForm() {
-    setState(() {
-      _isHealthFormVisible = !_isHealthFormVisible;
-    });
-  }
-
   // Handle long press on clock in button
   Future<void> _handleClockInLongPress() async {
     // 1. Ensure location is available before proceeding
@@ -615,6 +607,37 @@ class _PresensiPageState extends State<PresensiPage> {
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
+        actions: [
+          // IconButton(
+          //   icon: const Icon(Icons.history_rounded),
+          //   tooltip: "Istorya Presensa",
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => const PresenceHistoryPage(),
+          //       ),
+          //     );
+          //   },
+          // ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PresenceHistoryPage(),
+                ),
+              );
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'list',
+                child: Text("Hare Historia Presensa"),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -674,89 +697,134 @@ class _PresensiPageState extends State<PresensiPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
-            // Health Condition Form (Morning) - Toggle visibility
+            // History Button Card
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PresenceHistoryPage(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
+                // decoration: BoxDecoration(
+                //   color: Colors.white,
+                //   borderRadius: BorderRadius.circular(16),
+                //   border: Border.all(color: Colors.redAccent.withOpacity(0.12)),
+                //   boxShadow: [
+                //     BoxShadow(
+                //       color: Colors.black.withOpacity(0.02),
+                //       blurRadius: 10,
+                //       offset: const Offset(0, 4),
+                //     ),
+                //   ],
+                // ),
+                // child: Row(
+                //   children: [
+                //     Container(
+                //       padding: const EdgeInsets.all(10),
+                //       decoration: BoxDecoration(
+                //         color: Colors.red.shade50,
+                //         shape: BoxShape.circle,
+                //       ),
+                //       child: const Icon(
+                //         Icons.history_rounded,
+                //         color: Colors.redAccent,
+                //         size: 22,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 16),
+                //     const Expanded(
+                //       child: Column(
+                //         crossAxisAlignment: CrossAxisAlignment.start,
+                //         children: [
+                //           Text(
+                //             "Historia Presensa",
+                //             style: TextStyle(
+                //               fontSize: 15,
+                //               fontWeight: FontWeight.bold,
+                //               color: Colors.black87,
+                //             ),
+                //           ),
+                //           SizedBox(height: 2),
+                //           Text(
+                //             "Haree dadus clock in no clock out",
+                //             style: TextStyle(fontSize: 12, color: Colors.grey),
+                //           ),
+                //         ],
+                //       ),
+                //     ),
+                //     const Icon(
+                //       Icons.arrow_forward_ios_rounded,
+                //       size: 14,
+                //       color: Colors.grey,
+                //     ),
+                //   ],
+                // ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Health Condition Form (Morning) - Permanently visible
             if (isMorning) ...[
-              // Header with toggle button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Kondisaun Saúde (*)",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Kondisaun Saúde (*)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
                   ),
-                  TextButton.icon(
-                    onPressed: _toggleHealthForm,
-                    icon: Icon(
-                      _isHealthFormVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      size: 20,
-                    ),
-                    label: Text(_isHealthFormVisible ? "Loke" : "oke"),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 8),
-              // Show health form when toggled
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _isHealthFormVisible ? 120 : 0,
-                child: _isHealthFormVisible
-                    ? DropdownButtonFormField<String>(
-                        initialValue: _healthCondition,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.redAccent,
-                              width: 2,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                        items:
-                            [
-                                  "Saudável",
-                                  "Isin-manas",
-                                  "Me'ar",
-                                  "Inus-metin",
-                                  "Ulun-Moras",
-                                ]
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (val) =>
-                            setState(() => _healthCondition = val!),
-                      )
-                    : const SizedBox(),
+              DropdownButtonFormField<String>(
+                initialValue: _healthCondition,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Colors.redAccent,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                items:
+                    [
+                          "Saudável",
+                          "Isin-manas",
+                          "Me'ar",
+                          "Inus-metin",
+                          "Ulun-Moras",
+                        ]
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                onChanged: (val) => setState(() => _healthCondition = val!),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
               // Late Reason field - only visible if past scheduled start time
               if (_isLate()) ...[
                 const Align(
@@ -787,99 +855,59 @@ class _PresensiPageState extends State<PresensiPage> {
                 ),
                 const SizedBox(height: 20),
               ],
-
-              // SUBMIT CLOCK IN BUTTON
-              if (_isHealthFormVisible)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: _buildButton(
-                    "SUBMIT CLOCK IN",
-                    Colors.green,
-                    (DateTime.now().hour < 9 ||
-                        _lateReasonController.text.isNotEmpty),
-                    _handleClockInLongPress,
-                  ),
-                ),
             ],
 
             // Photo Section - Only visible during Clock Out (evening)
             if (isEvening) ...[
               // Health Condition Form (Evening) - Same as Morning
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Kondisaun Saúde (*)",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Kondisaun Saúde (*)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
                   ),
-                  TextButton.icon(
-                    onPressed: _toggleHealthForm,
-                    icon: Icon(
-                      _isHealthFormVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      size: 20,
-                    ),
-                    label: Text(_isHealthFormVisible ? "Loke" : "oke"),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 8),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _isHealthFormVisible ? 120 : 0,
-                child: _isHealthFormVisible
-                    ? DropdownButtonFormField<String>(
-                        initialValue: _healthCondition,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.redAccent,
-                              width: 2,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                        items:
-                            [
-                                  "Saudável",
-                                  "Isin-manas",
-                                  "Me'ar",
-                                  "Inus-metin",
-                                  "Ulun-Moras",
-                                ]
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (val) =>
-                            setState(() => _healthCondition = val!),
-                      )
-                    : const SizedBox(),
+              DropdownButtonFormField<String>(
+                initialValue: _healthCondition,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Colors.redAccent,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                items:
+                    [
+                          "Saudável",
+                          "Isin-manas",
+                          "Me'ar",
+                          "Inus-metin",
+                          "Ulun-Moras",
+                        ]
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                onChanged: (val) => setState(() => _healthCondition = val!),
               ),
               const SizedBox(height: 10),
 
@@ -939,195 +967,179 @@ class _PresensiPageState extends State<PresensiPage> {
               const SizedBox(height: 28),
 
               // Photo Section - Only visible during Clock Out (evening)
-              if (isEvening) ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Hasai Foto servisu nian (*)",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Hasai Foto servisu nian (*)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: _takePhoto,
-                  child: Container(
-                    height: 240,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _imageFile != null
-                            ? Colors.green.shade300
-                            : Colors.grey.shade300,
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          // ignore: deprecated_member_use
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _takePhoto,
+                child: Container(
+                  height: 240,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _imageFile != null
+                          ? Colors.green.shade300
+                          : Colors.grey.shade300,
+                      width: 2,
                     ),
-                    child: _imageFile != null
-                        ? Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(18),
-                                child: Image.file(
-                                  _imageFile!,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
+                    boxShadow: [
+                      BoxShadow(
+                        // ignore: deprecated_member_use
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: _imageFile != null
+                      ? Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: Image.file(
+                                _imageFile!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
                               ),
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
+                            ),
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  // ignore: deprecated_member_use
-                                  color: Colors.redAccent.withOpacity(0.1),
-                                  shape: BoxShape.circle,
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
-                                  Icons.camera_alt,
-                                  size: 48,
-                                  color: Colors.redAccent,
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 20,
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                "Klik hodi hasai foto",
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                // ignore: deprecated_member_use
+                                color: Colors.redAccent.withOpacity(0.1),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
-                  ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                size: 48,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Klik hodi hasai foto",
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
-                const SizedBox(height: 28),
-              ],
-
-              // Action Buttons
-              if (isMorning)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    children: [
-                      _buildButton(
-                        "CLOCK IN",
-                        Colors.green,
-                        true, // Clock in doesn't need photo
-                        () {
-                          // Normal tap - show health form only
-                          setState(() => _isHealthFormVisible = true);
-                        },
-                        onLongPress: _handleClockInLongPress,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "Tap to show health form • Long press to confirm",
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else if (isEvening)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    children: [
-                      _buildButton(
-                        "CLOCK OUT",
-                        Colors.redAccent,
-                        (_imageFile != null && _taskController.text.isNotEmpty),
-                        () {
-                          // If forms are filled, handle clock out
-                          if (_imageFile != null &&
-                              _taskController.text.isNotEmpty) {
-                            _handleClockOutLongPress();
-                          } else {
-                            // Otherwise show forms
-                            setState(() {
-                              _isHealthFormVisible = true;
-                              _isPhotoFormVisible = true;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "Press to confirm Clock Out",
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Color.fromARGB(255, 63, 52, 42),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Ondu la'ós oras presensa",
-                        style: TextStyle(
-                          color: Colors.orange.shade700,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ),
+              const SizedBox(height: 28),
             ],
+
+            // Action Buttons
+            if (isMorning)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  children: [
+                    _buildButton(
+                      "CLOCK IN",
+                      Colors.green,
+                      (!_isLate() || _lateReasonController.text.isNotEmpty),
+                      _handleClockInLongPress,
+                      onLongPress: _handleClockInLongPress,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Tap or long press to confirm Clock In",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (isEvening)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  children: [
+                    _buildButton(
+                      "CLOCK OUT",
+                      Colors.redAccent,
+                      (_imageFile != null && _taskController.text.isNotEmpty),
+                      _handleClockOutLongPress,
+                      onLongPress: _handleClockOutLongPress,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Tap or long press to confirm Clock Out",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.access_time,
+                      color: Color.fromARGB(255, 63, 52, 42),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Ondu la'ós oras presensa",
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
