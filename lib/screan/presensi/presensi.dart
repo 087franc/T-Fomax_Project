@@ -60,26 +60,26 @@ class _PresensiPageState extends State<PresensiPage> {
     return DateTime.now().hour >= 17 && DateTime.now().hour < 21;
   }
 
-  bool _isWithinWindow(
-    String timeStr,
-    int startOffsetHours,
-    int endOffsetHours,
-  ) {
-    try {
-      final now = DateTime.now();
-      final parts = timeStr.split(':');
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
+  // bool _isWithinWindow(
+  //   String timeStr,
+  //   int startOffsetHours,
+  //   int endOffsetHours,
+  // ) {
+  //   try {
+  //     final now = DateTime.now();
+  //     final parts = timeStr.split(':');
+  //     final hour = int.parse(parts[0]);
+  //     final minute = int.parse(parts[1]);
 
-      final baseTime = DateTime(now.year, now.month, now.day, hour, minute);
-      final startTime = baseTime.add(Duration(hours: startOffsetHours));
-      final endTime = baseTime.add(Duration(hours: endOffsetHours));
+  //     final baseTime = DateTime(now.year, now.month, now.day, hour, minute);
+  //     final startTime = baseTime.add(Duration(hours: startOffsetHours));
+  //     final endTime = baseTime.add(Duration(hours: endOffsetHours));
 
-      return now.isAfter(startTime) && now.isBefore(endTime);
-    } catch (e) {
-      return false;
-    }
-  }
+  //     return now.isAfter(startTime) && now.isBefore(endTime);
+  //   } catch (e) {
+  //     return false;
+  //   }
+  // }
 
   @override
   void initState() {

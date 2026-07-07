@@ -160,7 +160,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Ticket assigned and status updated successfully"),
+              content: Text("Ticket ne'e Assign no Status update ona!THANKS"),
               backgroundColor: Colors.green,
             ),
           );
@@ -515,7 +515,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                         color: Colors.white,
                       ),
                       label: const Text(
-                        "CLAIM TICKET",
+                        "Claim Ticket",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -535,7 +535,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       onPressed: null,
                       icon: const Icon(Icons.done_all, color: Colors.grey),
                       label: const Text(
-                        "TICKET SOLVED",
+                        "TICKET NE'E RESOLVE ONA",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -558,7 +558,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                         color: Colors.white,
                       ),
                       label: const Text(
-                        "ENTER CHAT",
+                        "Tama ba Chat",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -577,7 +577,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       onPressed: null,
                       icon: const Icon(Icons.lock_outline, color: Colors.grey),
                       label: const Text(
-                        "CLAIMED BY OTHER TEAM",
+                        "TICKET NE'E CLAIM ONA",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

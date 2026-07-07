@@ -721,7 +721,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
                       ),
                       child: Center(
                         child: Text(
-                          "🔒 Private Notes",
+                          "🔒 Nota Privadi",
                           style: TextStyle(
                             color: _activeTab == 1
                                 ? Colors.white
@@ -849,7 +849,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
     final messageText = _stripHtmlTags(m.message);
     final imageUrl = m.imageUrl;
     final isSending = m.isSending;
-    final timeStr = m.createdAt;
+    final timeStr = m.createdAt.split('T')[1].substring(0, 5);
     final senderName = m.senderName;
     final isNote = _activeTab == 1;
 
@@ -905,7 +905,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
                   if (isNote) const SizedBox(width: 4),
                   Text(
                     isMe
-                        ? "Ha'u (Private Note)"
+                        ? "(Private Note)"
                         : (isNote ? "$senderName (Internal)" : senderName),
                     style: TextStyle(
                       fontSize: 11,

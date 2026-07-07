@@ -1,4 +1,4 @@
-import 'dart:convert';
+// import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -266,18 +266,18 @@ class _StartPatroliPageState extends State<StartPatroliPage> {
     );
   }
 
-  Widget _buildLocationTile() {
-    return ListTile(
-      tileColor: Colors.grey[50],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      leading: const Icon(Icons.my_location, color: Colors.blue),
-      title: Text(_currentAddress, style: const TextStyle(fontSize: 13)),
-      trailing: TextButton(onPressed: _getLocation, child: const Text("FOTI")),
-    );
-  }
+  // Widget _buildLocationTile() {
+  //   return ListTile(
+  //     tileColor: Colors.grey[50],
+  //     shape: RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.circular(10),
+  //       side: BorderSide(color: Colors.grey.shade300),
+  //     ),
+  //     leading: const Icon(Icons.my_location, color: Colors.blue),
+  //     title: Text(_currentAddress, style: const TextStyle(fontSize: 13)),
+  //     trailing: TextButton(onPressed: _getLocation, child: const Text("FOTI")),
+  //   );
+  // }
 
   Widget _buildSubmitButton() {
     return SizedBox(
