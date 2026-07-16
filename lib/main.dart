@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'login_page.dart'; // Importa failu login ne'ebé ita kria ona
-// import 'otp_page.dart'; // Importa failu otp ne'ebé ita kria ona
-// import 'home_page.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';

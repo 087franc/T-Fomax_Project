@@ -1,27 +1,7 @@
+import 'dart:convert';
+import 'package:T_Fomax/services/api_service.dart';
 import 'package:flutter/material.dart';
-
-// 1. DEFINE MODEL EQUIPMENT (Tau iha kraik ka kria file ketak)
-class Equipment {
-  final String id;
-  final String name;
-  final String category;
-  final String unit;
-  final int total;
-  final int good;
-  final int broken;
-  final int borrowed;
-
-  Equipment({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.unit,
-    required this.total,
-    required this.good,
-    required this.broken,
-    required this.borrowed,
-  });
-}
+import 'detail_ekipament.dart';
 
 class AlkerSarkerPage extends StatefulWidget {
   const AlkerSarkerPage({super.key});
@@ -31,28 +11,129 @@ class AlkerSarkerPage extends StatefulWidget {
 }
 
 class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
-  final List<Equipment> inventory = [
-    Equipment(
-      id: "EQ-01",
-      name: "Splicer",
-      category: "Alker",
-      unit: "Unit",
-      total: 10,
-      good: 7,
-      broken: 1,
-      borrowed: 2,
-    ),
-    Equipment(
-      id: "EQ-02",
-      name: "OPM",
-      category: "Alker",
-      unit: "Unit",
-      total: 15,
-      good: 12,
-      broken: 3,
-      borrowed: 0,
-    ),
-  ];
+  List<Equipment> inventory = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final response = await ApiService().get("/api/v1/assets");
+
+      if (response.statusCode == 200) {
+        final dynamic data = jsonDecode(response.body);
+        List<dynamic> rawList = [];
+        if (data is List) {
+          rawList = data;
+        } else if (data is Map && data.containsKey('data')) {
+          rawList = data['data'] is List ? data['data'] : [];
+        }
+
+        if (mounted) {
+          setState(() {
+            final List<Equipment> loadedItems = rawList.map((item) {
+              if (item is Map<String, dynamic>) {
+                return Equipment.fromJson(item);
+              } else if (item is Map) {
+                return Equipment.fromJson(Map<String, dynamic>.from(item));
+              }
+              return Equipment(
+                id: '',
+                tools_name: '',
+                category: '',
+                tools_type: '',
+                unidade: '',
+                total: 0,
+                good: 0,
+                broken: 0,
+                borrowed: 0,
+              );
+            }).toList();
+
+            // Print debug info for each loaded item to diagnose API response
+            for (var item in loadedItems) {
+              debugPrint(
+                "API Item: id='${item.id}', tools_name='${item.tools_name}', tools_type='${item.tools_type}', total=${item.total}, good=${item.good}, broken=${item.broken}, borrowed=${item.borrowed}",
+              );
+            }
+
+            // 1. Deduplicate by ID to prevent double-counting due to duplicate API rows
+            final Map<String, Equipment> distinctById = {};
+            for (var item in loadedItems) {
+              final idKey = item.id.isNotEmpty
+                  ? item.id
+                  : UniqueKey().toString();
+              distinctById[idKey] = item;
+            }
+
+            // 2. Group and aggregate equipment by tools_name and tools_type (case-insensitive)
+            final Map<String, List<Equipment>> groupedByNameAndType = {};
+            for (var item in distinctById.values) {
+              final String nameKey =
+                  "${item.tools_name.trim().toLowerCase()}_${item.tools_type.trim().toLowerCase()}";
+              if (!groupedByNameAndType.containsKey(nameKey)) {
+                groupedByNameAndType[nameKey] = [];
+              }
+              groupedByNameAndType[nameKey]!.add(item);
+            }
+
+            // 3. Build the aggregated Equipment list with original items populated
+            final List<Equipment> aggregatedList = [];
+            for (var entry in groupedByNameAndType.entries) {
+              final groupItems = entry.value;
+              final firstItem = groupItems.first;
+
+              int totalSum = 0;
+              int goodSum = 0;
+              int brokenSum = 0;
+              int borrowedSum = 0;
+
+              for (var git in groupItems) {
+                totalSum += git.total;
+                goodSum += git.good;
+                brokenSum += git.broken;
+                borrowedSum += git.borrowed;
+              }
+
+              aggregatedList.add(
+                Equipment(
+                  id: firstItem.id,
+                  tools_name: firstItem.tools_name,
+                  category: firstItem.category,
+                  tools_type: firstItem.tools_type,
+                  unidade: firstItem.unidade,
+                  total: totalSum,
+                  good: goodSum,
+                  broken: brokenSum,
+                  borrowed: borrowedSum,
+                  statusLabel: firstItem.statusLabel,
+                  stockStatus: firstItem.stockStatus,
+                  remarks: firstItem.remarks,
+                  createdAt: firstItem.createdAt,
+                  updatedAt: firstItem.updatedAt,
+                  originalItems: groupItems,
+                ),
+              );
+            }
+            inventory = aggregatedList;
+          });
+        }
+        debugPrint("Items Loaded: ${inventory.length}");
+      } else {
+        debugPrint("Error: API returned status ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Exception fetching data: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +142,8 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: Colors.redAccent,
         elevation: 1,
-        // IMPLEMENTASAUN LOGO HO TESTU IHA APPBAR
         title: const Row(
           children: [
-            // Garanja file logo iha ona pasta assets
-            // Image.asset('img/T-Fomax.png', height: 35),
             SizedBox(width: 10),
             Text(
               "Fasilidade no Ekipamento",
@@ -74,161 +152,56 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
           ],
         ),
       ),
-      body: ListView.builder(
-        itemCount: inventory.length,
-        itemBuilder: (context, index) {
-          final item = inventory[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: const Color(0xFFC6141F).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.inventory_2, color: Color(0xFFC6141F)),
-              ),
-              title: Text(
-                item.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                "Kategoria: ${item.category} | Tot: ${item.total}",
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailAlkerPage(item: item),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFC6141F)),
+            )
+          : ListView.builder(
+              itemCount: inventory.length,
+              itemBuilder: (context, index) {
+                final item = inventory[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 8,
+                  ),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
+                        color: const Color(0xFFC6141F).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2,
+                        color: Color(0xFFC6141F),
+                      ),
+                    ),
+                    title: Text(
+                      item.tools_name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      "Tipu: ${item.tools_type} | Unidade: ${item.unidade}",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailAlkerPage(item: item),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class DetailAlkerPage extends StatelessWidget {
-  final Equipment item;
-  const DetailAlkerPage({super.key, required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(item.name),
-        backgroundColor: const Color(0xFFC6141F), // Mean Telkomcel
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Dashboard Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard("Total", item.total.toString(), Colors.blue),
-                _buildStatCard("Di'ak", item.good.toString(), Colors.green),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard("Aat", item.broken.toString(), Colors.red),
-                _buildStatCard(
-                  "Empresta",
-                  item.borrowed.toString(),
-                  Colors.orange,
-                ),
-              ],
-            ),
-            const Divider(height: 40),
-            _buildInfoRow("ID Sasán", item.id),
-            _buildInfoRow("Kategoria", item.category),
-            _buildInfoRow("Unidade", item.unit),
-            const Spacer(),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6141F),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                // Implementasaun fila ba listagem
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.door_back_door),
-
-              label: const Text(
-                "Fila",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, Color color) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(15),
-        // ignore: deprecated_member_use
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ],
-      ),
     );
   }
 }

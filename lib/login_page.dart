@@ -92,8 +92,8 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 controller: emailCtrl,
                 decoration: const InputDecoration(
-                  labelText: "Email/Nik",
-                  hintText: "prense ita nia email/nik",
+                  labelText: "Email",
+                  hintText: "prense ita nia email",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email),
                 ),

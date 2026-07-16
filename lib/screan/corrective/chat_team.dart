@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -299,7 +300,7 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
       message: "[Photo]",
       imageUrl: "",
       type: "image",
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: DateFormat.jm().format(DateTime.now()),
       isSending: true,
       localImageFile: File(photo.path),
     );
@@ -893,29 +894,32 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
               : CrossAxisAlignment.start,
           children: [
             if (!isMe || isNote) ...[
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isNote)
-                    Icon(
-                      Icons.lock,
-                      size: 11,
-                      color: isMe ? Colors.amber[200] : Colors.amber[700],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isNote)
+                      Icon(
+                        Icons.lock,
+                        size: 11,
+                        color: isMe ? Colors.amber[200] : Colors.amber[700],
+                      ),
+                    if (isNote) const SizedBox(width: 4),
+                    Text(
+                      isMe
+                          ? "(Private Note)"
+                          : (isNote ? "$senderName (Internal)" : senderName),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isMe
+                            ? Colors.amber[100]
+                            : (isNote ? Colors.amber[950] : Colors.red[800]),
+                      ),
                     ),
-                  if (isNote) const SizedBox(width: 4),
-                  Text(
-                    isMe
-                        ? "(Private Note)"
-                        : (isNote ? "$senderName (Internal)" : senderName),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isMe
-                          ? Colors.amber[100]
-                          : (isNote ? Colors.amber[950] : Colors.red[800]),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 4),
             ],

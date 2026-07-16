@@ -37,10 +37,12 @@ class AttendanceRecord {
     DateTime ci = DateTime.now();
     if (json['clock_in'] != null) {
       try {
-        ci = DateTime.parse(json['clock_in']);
+        ci = DateTime.parse(json['clock_in']).toLocal();
       } catch (_) {
         try {
-          ci = DateFormat('yyyy-MM-dd HH:mm:ss').parse(json['clock_in']);
+          ci = DateFormat(
+            'yyyy-MM-dd HH:mm:ss',
+          ).parse(json['clock_in']).toLocal();
         } catch (_) {}
       }
     }
@@ -48,10 +50,12 @@ class AttendanceRecord {
     DateTime? co;
     if (json['clock_out'] != null) {
       try {
-        co = DateTime.parse(json['clock_out']);
+        co = DateTime.parse(json['clock_out']).toLocal();
       } catch (_) {
         try {
-          co = DateFormat('yyyy-MM-dd HH:mm:ss').parse(json['clock_out']);
+          co = DateFormat(
+            'yyyy-MM-dd HH:mm:ss',
+          ).parse(json['clock_out']).toLocal();
         } catch (_) {}
       }
     }
@@ -86,32 +90,63 @@ class PresenceHistoryPage extends StatefulWidget {
 class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
   List<AttendanceRecord> _history = [];
   bool _isLoading = true;
+  bool _isLoadMoreRunning = false;
   String _error = '';
   bool _showSimulated = false;
+
+  int _page = 1;
+  final int _limit = 20;
+  bool _hasMore = true;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
-    _fetchHistory();
+    _scrollController = ScrollController()..addListener(_scrollListener);
+    _fetchHistory(isRefresh: true);
   }
 
-  Future<void> _fetchHistory() async {
-    setState(() {
-      _isLoading = true;
-      _error = '';
-      _showSimulated = false;
-    });
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoading &&
+        !_isLoadMoreRunning &&
+        _hasMore &&
+        !_showSimulated) {
+      _fetchMore();
+    }
+  }
+
+  Future<void> _fetchHistory({bool isRefresh = false}) async {
+    if (isRefresh) {
+      setState(() {
+        _isLoading = true;
+        _error = '';
+        _showSimulated = false;
+        _page = 1;
+        _hasMore = true;
+        _history = [];
+      });
+    } else {
+      setState(() {
+        _isLoadMoreRunning = true;
+      });
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id') ?? '';
 
-      var response = await ApiService().get(
-        "/api/v1/attendance?user_id=$userId",
+      final response = await ApiService().get(
+        "/api/v1/attendance/history/$userId?page=$_page&limit=$_limit",
       );
-      if (response.statusCode != 200) {
-        response = await ApiService().get("/api/v1/attendance");
-      }
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -134,84 +169,107 @@ class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
             .map((x) => AttendanceRecord.fromJson(x))
             .toList();
 
-        // Sort history by date descending
-        parsedHistory.sort((a, b) => b.clockIn.compareTo(a.clockIn));
-
         setState(() {
-          _history = parsedHistory;
+          if (isRefresh) {
+            _history = parsedHistory;
+          } else {
+            _history.addAll(parsedHistory);
+          }
+
+          // Sort entire history by date descending
+          _history.sort((a, b) => b.clockIn.compareTo(a.clockIn));
+
+          if (parsedHistory.length < _limit) {
+            _hasMore = false;
+          }
+
           _isLoading = false;
-          if (_history.isEmpty) {
-            _loadSimulatedData();
+          _isLoadMoreRunning = false;
+
+          if (_history.isEmpty && isRefresh) {
+            // _loadSimulatedData();
           }
         });
       } else {
         setState(() {
           _isLoading = false;
-          _loadSimulatedData(errorMsg: "Status ${response.statusCode}");
+          _isLoadMoreRunning = false;
+          // if (isRefresh) {
+          //   _loadSimulatedData(errorMsg: "Status ${response.statusCode}");
+          // }
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _loadSimulatedData(errorMsg: e.toString());
+        _isLoadMoreRunning = false;
+        // if (isRefresh) {
+        //   _loadSimulatedData(errorMsg: e.toString());
+        // }
       });
     }
   }
 
-  void _loadSimulatedData({String? errorMsg}) {
-    // If backend endpoint doesn't exist or is empty, we load mock history to ensure user gets a functional page
-    final now = DateTime.now();
-    _history = [
-      AttendanceRecord(
-        id: "1",
-        userId: "96",
-        clockIn: DateTime(now.year, now.month, now.day, 8, 12, 0),
-        clockOut: DateTime(now.year, now.month, now.day, 17, 05, 0),
-        health: "0",
-        activityDescription:
-            "Repara fibra optika iha terminál Telkomcel Colmera.",
-        latClockIn: "-8.556877",
-        longClockIn: "125.560314",
-      ),
-      AttendanceRecord(
-        id: "2",
-        userId: "96",
-        clockIn: DateTime(now.year, now.month, now.day - 1, 9, 15, 0),
-        clockOut: DateTime(now.year, now.month, now.day - 1, 17, 30, 0),
-        health: "0",
-        lateReason: "Tránzitu iha área Bidau tanba udan boot.",
-        activityDescription: "Manutensaun rotina ba AC server no UPS backup.",
-        latClockIn: "-8.557102",
-        longClockIn: "125.561405",
-      ),
-      AttendanceRecord(
-        id: "3",
-        userId: "96",
-        clockIn: DateTime(now.year, now.month, now.day - 2, 8, 05, 0),
-        clockOut: DateTime(now.year, now.month, now.day - 2, 17, 00, 0),
-        health: "1",
-        activityDescription:
-            "Monitorizasaun rede corrective iha Sentru Operasaun.",
-        latClockIn: "-8.556912",
-        longClockIn: "125.560410",
-      ),
-      AttendanceRecord(
-        id: "4",
-        userId: "96",
-        clockIn: DateTime(now.year, now.month, now.day - 3, 8, 10, 0),
-        clockOut: DateTime(now.year, now.month, now.day - 3, 17, 10, 0),
-        health: "0",
-        activityDescription:
-            "Konfigurasaun router foun iha kliente korporativu.",
-        latClockIn: "-8.556750",
-        longClockIn: "125.560120",
-      ),
-    ];
-    _showSimulated = true;
-    if (errorMsg != null) {
-      debugPrint("Presence history API error fallback: $errorMsg");
-    }
+  Future<void> _fetchMore() async {
+    _page++;
+    await _fetchHistory(isRefresh: false);
   }
+
+  // void _loadSimulatedData({String? errorMsg}) {
+  //   // If backend endpoint doesn't exist or is empty, we load mock history to ensure user gets a functional page
+  //   final now = DateTime.now();
+  //   _history = [
+  //     AttendanceRecord(
+  //       id: "1",
+  //       userId: "96",
+  //       clockIn: DateTime(now.year, now.month, now.day, 8, 12, 0),
+  //       clockOut: DateTime(now.year, now.month, now.day, 17, 05, 0),
+  //       health: "0",
+  //       activityDescription:
+  //           "Repara fibra optika iha terminál Telkomcel Colmera.",
+  //       latClockIn: "-8.556877",
+  //       longClockIn: "125.560314",
+  //     ),
+  //     AttendanceRecord(
+  //       id: "2",
+  //       userId: "96",
+  //       clockIn: DateTime(now.year, now.month, now.day - 1, 9, 15, 0),
+  //       clockOut: DateTime(now.year, now.month, now.day - 1, 17, 30, 0),
+  //       health: "0",
+  //       lateReason: "Tránzitu iha área Bidau tanba udan boot.",
+  //       activityDescription: "Manutensaun rotina ba AC server no UPS backup.",
+  //       latClockIn: "-8.557102",
+  //       longClockIn: "125.561405",
+  //     ),
+  //     AttendanceRecord(
+  //       id: "3",
+  //       userId: "96",
+  //       clockIn: DateTime(now.year, now.month, now.day - 2, 8, 05, 0),
+  //       clockOut: DateTime(now.year, now.month, now.day - 2, 17, 00, 0),
+  //       health: "1",
+  //       activityDescription:
+  //           "Monitorizasaun rede corrective iha Sentru Operasaun.",
+  //       latClockIn: "-8.556912",
+  //       longClockIn: "125.560410",
+  //     ),
+  //     AttendanceRecord(
+  //       id: "4",
+  //       userId: "96",
+  //       clockIn: DateTime(now.year, now.month, now.day - 3, 8, 10, 0),
+  //       clockOut: DateTime(now.year, now.month, now.day - 3, 17, 10, 0),
+  //       health: "0",
+  //       activityDescription:
+  //           "Konfigurasaun router foun iha kliente korporativu.",
+  //       latClockIn: "-8.556750",
+  //       longClockIn: "125.560120",
+  //     ),
+  //   ];
+  //   _showSimulated = true;
+  //   _hasMore = false;
+  //   if (errorMsg != null) {
+  //     debugPrint("Presence history API error fallback: $errorMsg");
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +294,7 @@ class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: "Aktualiza",
-            onPressed: _fetchHistory,
+            onPressed: () => _fetchHistory(isRefresh: true),
           ),
         ],
       ),
@@ -245,9 +303,10 @@ class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
               child: CircularProgressIndicator(color: Colors.redAccent),
             )
           : RefreshIndicator(
-              onRefresh: _fetchHistory,
+              onRefresh: () => _fetchHistory(isRefresh: true),
               color: Colors.redAccent,
               child: CustomScrollView(
+                controller: _scrollController,
                 slivers: [
                   // Simulated Mode Banner
                   if (_showSimulated)
@@ -359,6 +418,18 @@ class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
                           ),
                         ),
 
+                  if (_isLoadMoreRunning)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ),
+                    ),
+
                   const SliverToBoxAdapter(child: SizedBox(height: 30)),
                 ],
               ),
@@ -422,10 +493,11 @@ class _PresenceHistoryPageState extends State<PresenceHistoryPage> {
     final monthStr = DateFormat('MMM').format(record.clockIn).toUpperCase();
     final dayName = DateFormat('EEEE').format(record.clockIn);
 
-    final clockInTime = DateFormat('HH:mm').format(record.clockIn);
+    // update the DateFormat to show the time in Timor Leste format
+    final clockInTime = DateFormat.jm().format(record.clockIn);
     final clockOutTime = record.clockOut != null
-        ? DateFormat('HH:mm').format(record.clockOut!)
-        : '--:--';
+        ? DateFormat.jm().format(record.clockOut!)
+        : '--:--:--';
 
     final isLate = record.lateReason != null || record.clockIn.hour >= 9;
     final isHealthy = record.health == "0";

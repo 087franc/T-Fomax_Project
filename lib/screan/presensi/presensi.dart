@@ -1079,7 +1079,7 @@ class _PresensiPageState extends State<PresensiPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      "Tap or long press to confirm Clock In",
+                      "Hanehan Botaun hodi Konfirma Clock In",
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: 12,

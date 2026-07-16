@@ -10,7 +10,7 @@ import 'screan/project_team/projectteam.dart';
 import 'screan/preventive/preventivepage.dart';
 import 'login_page.dart';
 import 'about_page.dart';
-import 'profile.dart';
+import 'screan/profile/profile.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/api_service.dart';
