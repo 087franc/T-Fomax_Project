@@ -603,8 +603,8 @@ class _PresensiPageState extends State<PresensiPage> {
           "Presensa",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
+        // backgroundColor: Colors.redAccent,
+        // foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         actions: [

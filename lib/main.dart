@@ -1,10 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
   runApp(const MyApp());
 }
 
@@ -16,7 +26,26 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'T-Fomax', // Telkomcel Fiber Optic Maintenance Excellence
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      theme: ThemeData(
+        // primarySwatch: Colors.blue,
+        useMaterial3: true,
+        textTheme: const TextTheme(
+          // Definisau ba Text的大小aring ba ita material app sira
+          bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF333333)),
+          bodyLarge: TextStyle(fontSize: 16, color: Color(0xFF333333)),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          headlineSmall: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.redAccent,
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
+          iconTheme: IconThemeData(color: Color.fromARGB(255, 153, 152, 150)),
+        ),
+      ),
       home: const SessionCheck(),
     );
   }

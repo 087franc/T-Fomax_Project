@@ -66,13 +66,47 @@ class ChatMessage {
 
     // Image URL
     String imgUrl = '';
-    if (json['image'] != null && json['image'].toString() != 'null' && json['image'].toString().isNotEmpty) {
-      imgUrl = json['image'].toString();
-    } else if (json['image_url'] != null && json['image_url'].toString() != 'null' && json['image_url'].toString().isNotEmpty) {
-      imgUrl = json['image_url'].toString();
+    
+    String? cleanVal(dynamic val) {
+      if (val == null) return null;
+      final s = val.toString().trim();
+      if (s == 'null' || s.isEmpty) return null;
+      return s;
     }
 
-    // Type
+    imgUrl = cleanVal(json['image']) ??
+             cleanVal(json['image_url']) ??
+             cleanVal(json['file_path']) ??
+             cleanVal(json['file_url']) ??
+             cleanVal(json['path']) ??
+             '';
+
+    if (imgUrl.isEmpty && json['file'] != null) {
+      if (json['file'] is Map) {
+        final fileMap = json['file'] as Map;
+        imgUrl = cleanVal(fileMap['url']) ??
+                 cleanVal(fileMap['path']) ??
+                 cleanVal(fileMap['file_path']) ??
+                 cleanVal(fileMap['file_url']) ??
+                 cleanVal(fileMap['filename']) ??
+                 cleanVal(fileMap['name']) ??
+                 '';
+      } else {
+        final fStr = cleanVal(json['file']);
+        if (fStr != null && !RegExp(r'^\d+$').hasMatch(fStr)) {
+          imgUrl = fStr;
+        }
+      }
+    }
+
+    final String fileId = cleanVal(json['file_id']) ?? 
+                          (json['file'] != null && json['file'] is! Map && RegExp(r'^\d+$').hasMatch(json['file'].toString()) ? json['file'].toString() : '');
+
+    if (imgUrl.isEmpty && fileId.isNotEmpty && fileId != 'null') {
+      imgUrl = "/api/v1/tickets/conversations/files/$fileId";
+    }
+
+    // Ensure type is 'image' if we successfully parsed an image URL
     String msgType = json['type']?.toString() ?? 'text';
     if (msgType == 'null' || msgType.isEmpty) {
       msgType = 'text';

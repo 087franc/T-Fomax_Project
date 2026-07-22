@@ -116,6 +116,8 @@ class _AlkerSarkerPageState extends State<AlkerSarkerPage> {
                   createdAt: firstItem.createdAt,
                   updatedAt: firstItem.updatedAt,
                   originalItems: groupItems,
+                  tools_id: firstItem.tools_id,
+                  tools_type_id: firstItem.tools_type_id,
                 ),
               );
             }

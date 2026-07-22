@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -284,23 +283,38 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
 
   // --- TAKE PHOTO & SEND IMAGE ---
   Future<void> _takePhoto() async {
+    await _pickAndSendImage(ImageSource.camera);
+  }
+
+  // --- PICK GALLERY & SEND IMAGE ---
+  Future<void> _pickGallery() async {
+    await _pickAndSendImage(ImageSource.gallery);
+  }
+
+  Future<void> _pickAndSendImage(ImageSource source) async {
     final picker = ImagePicker();
     final photo = await picker.pickImage(
-      source: ImageSource.camera,
+      source: source,
       imageQuality: 40,
     );
 
     if (photo == null) return;
+
+    final text = _msgController.text.trim();
+    final bodyText = text.isNotEmpty ? text : "[Photo]";
+    if (text.isNotEmpty) {
+      _msgController.clear();
+    }
 
     final tempMsg = ChatMessage(
       id: "temp_${DateTime.now().millisecondsSinceEpoch}",
       senderId: _userId,
       senderName: "Ha'u",
       senderEmail: _userEmail,
-      message: "[Photo]",
+      message: bodyText,
       imageUrl: "",
       type: "image",
-      createdAt: DateFormat.jm().format(DateTime.now()),
+      createdAt: DateTime.now().toIso8601String(),
       isSending: true,
       localImageFile: File(photo.path),
     );
@@ -320,9 +334,9 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
 
       final streamedResponse = await ApiService().multipartPost(
         endpoint,
-        fields: {"body": "[Photo]"},
+        fields: {"body": bodyText},
         imageFile: File(photo.path),
-        imageField: "image",
+        imageField: "file",
       );
 
       final response = await http.Response.fromStream(streamedResponse);
@@ -332,8 +346,23 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
           if (_activeTab == 0) {
             _conversations.removeWhere((m) => m.id == tempMsg.id);
             ChatMessage newMsg = decoded is Map
-                ? ChatMessage.fromJson(Map<String, dynamic>.from(decoded))
+                ? ChatMessage.fromJson(Map<String, dynamic>.from(decoded)).copyWith(
+                    localImageFile: tempMsg.localImageFile,
+                  )
                 : tempMsg.copyWith(isSending: false);
+
+            if (newMsg.senderId.isEmpty) {
+              newMsg = newMsg.copyWith(senderId: _userId);
+            }
+            if (newMsg.senderName == 'Ekipa' || newMsg.senderName.isEmpty) {
+              newMsg = newMsg.copyWith(
+                senderName: _userName.isNotEmpty ? _userName : "Ha'u",
+              );
+            }
+            if (newMsg.senderEmail.isEmpty) {
+              newMsg = newMsg.copyWith(senderEmail: _userEmail);
+            }
+
             final newId = newMsg.id;
             if (newId.isNotEmpty && !_conversations.any((m) => m.id == newId)) {
               _conversations.add(newMsg);
@@ -342,8 +371,23 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
           } else {
             _notes.removeWhere((m) => m.id == tempMsg.id);
             ChatMessage newMsg = decoded is Map
-                ? ChatMessage.fromJson(Map<String, dynamic>.from(decoded))
+                ? ChatMessage.fromJson(Map<String, dynamic>.from(decoded)).copyWith(
+                    localImageFile: tempMsg.localImageFile,
+                  )
                 : tempMsg.copyWith(isSending: false);
+
+            if (newMsg.senderId.isEmpty) {
+              newMsg = newMsg.copyWith(senderId: _userId);
+            }
+            if (newMsg.senderName == 'Ekipa' || newMsg.senderName.isEmpty) {
+              newMsg = newMsg.copyWith(
+                senderName: _userName.isNotEmpty ? _userName : "Ha'u",
+              );
+            }
+            if (newMsg.senderEmail.isEmpty) {
+              newMsg = newMsg.copyWith(senderEmail: _userEmail);
+            }
+
             final newId = newMsg.id;
             if (newId.isNotEmpty && !_notes.any((m) => m.id == newId)) {
               _notes.add(newMsg);
@@ -516,9 +560,9 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
   // --- FINALIZE TICKET PROCESS ---
   Future<void> _finalizeTicket() async {
     try {
-      final response = await ApiService().post(
-        "/api/v1/tickets/${widget.ticketId}/solve",
-        {"status": "SOLVED"},
+      final response = await ApiService().patch(
+        "/api/v1/tickets/${widget.ticketId}/status",
+        {"status": 5},
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (!mounted) return;
@@ -529,7 +573,8 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
           ),
         );
         widget.onFinalize();
-        Navigator.pop(context); // Pop back to detail
+        Navigator.pop(context); // Pop chat page
+        Navigator.pop(context); // Pop detail page
       } else {
         _showSnackBarError("Erro finaliza ticket: ${response.statusCode}");
       }
@@ -806,7 +851,11 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
     if (imageUrl.isNotEmpty) {
       String fullUrl = imageUrl;
       if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
-        fullUrl = "${ApiService.baseUrl}$imageUrl";
+        final base = ApiService.baseUrl.endsWith("/")
+            ? ApiService.baseUrl.substring(0, ApiService.baseUrl.length - 1)
+            : ApiService.baseUrl;
+        final path = imageUrl.startsWith("/") ? imageUrl : "/$imageUrl";
+        fullUrl = "$base$path";
       }
       return Image.network(
         fullUrl,
@@ -843,6 +892,74 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
     return const SizedBox.shrink();
   }
 
+  void _showFullScreenImage(BuildContext context, File? localImageFile, String imageUrl) {
+    String fullUrl = imageUrl;
+    if (localImageFile == null && imageUrl.isNotEmpty) {
+      if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+        final base = ApiService.baseUrl.endsWith("/")
+            ? ApiService.baseUrl.substring(0, ApiService.baseUrl.length - 1)
+            : ApiService.baseUrl;
+        final path = imageUrl.startsWith("/") ? imageUrl : "/$imageUrl";
+        fullUrl = "$base$path";
+      }
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: localImageFile != null
+                  ? Image.file(localImageFile)
+                  : Image.network(
+                      fullUrl,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image, color: Colors.white, size: 50),
+                              SizedBox(height: 10),
+                              Text(
+                                "Erro karga imajen",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildChatBubble(ChatMessage m) {
     final isMe = _isMe(m);
     final isImage =
@@ -850,7 +967,9 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
     final messageText = _stripHtmlTags(m.message);
     final imageUrl = m.imageUrl;
     final isSending = m.isSending;
-    final timeStr = m.createdAt.split('T')[1].substring(0, 5);
+    final timeStr = m.createdAt.contains('T')
+        ? m.createdAt.split('T')[1].substring(0, 5)
+        : (m.timeFormatted.isNotEmpty ? m.timeFormatted : m.createdAt);
     final senderName = m.senderName;
     final isNote = _activeTab == 1;
 
@@ -925,9 +1044,12 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
             ],
 
             if (isImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: _buildImageWidget(m.localImageFile, imageUrl),
+              GestureDetector(
+                onTap: () => _showFullScreenImage(context, m.localImageFile, imageUrl),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: _buildImageWidget(m.localImageFile, imageUrl),
+                ),
               )
             else
               Text(
@@ -989,6 +1111,10 @@ class _CorrectiveChatPageState extends State<CorrectiveChatPage> {
             IconButton(
               icon: const Icon(Icons.camera_alt, color: Colors.grey),
               onPressed: _takePhoto,
+            ),
+            IconButton(
+              icon: const Icon(Icons.photo_library, color: Colors.grey),
+              onPressed: _pickGallery,
             ),
             Expanded(
               child: Container(

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:T_Fomax/services/api_service.dart';
 
 class Equipment {
   final String id;
@@ -19,6 +21,9 @@ class Equipment {
   final String createdAt;
   final String updatedAt;
 
+  final String tools_id;
+  final String tools_type_id;
+
   Equipment({
     required this.id,
     required this.tools_name,
@@ -35,6 +40,8 @@ class Equipment {
     this.remarks = '',
     this.createdAt = '',
     this.updatedAt = '',
+    this.tools_id = '',
+    this.tools_type_id = '',
   });
 
   factory Equipment.fromJson(Map<String, dynamic> json) {
@@ -76,6 +83,15 @@ class Equipment {
     final String remarksVal = json['remarks']?.toString() ?? '';
     final String createdAtVal = json['created_at']?.toString() ?? '';
     final String updatedAtVal = json['updated_at']?.toString() ?? '';
+
+    final String toolsIdVal = json['tools_id']?.toString() ??
+        json['id_tools']?.toString() ??
+        '';
+
+    final String toolsTypeIdVal = json['tools_type_id']?.toString() ??
+        json['id_tools_type']?.toString() ??
+        (json['tools_type'] is Map ? json['tools_type']['id']?.toString() : null) ??
+        '';
 
     // Calculate good, broken, and borrowed based on status_label or status code
     final String labelLower = statusLabelVal.toLowerCase().trim();
@@ -130,6 +146,8 @@ class Equipment {
       remarks: remarksVal,
       createdAt: createdAtVal,
       updatedAt: updatedAtVal,
+      tools_id: toolsIdVal,
+      tools_type_id: toolsTypeIdVal,
       originalItems: const [],
     );
   }
@@ -142,9 +160,63 @@ class Equipment {
   }
 }
 
-class DetailAlkerPage extends StatelessWidget {
+class DetailAlkerPage extends StatefulWidget {
   final Equipment item;
   const DetailAlkerPage({super.key, required this.item});
+
+  @override
+  State<DetailAlkerPage> createState() => _DetailAlkerPageState();
+}
+
+class _DetailAlkerPageState extends State<DetailAlkerPage> {
+  Map<String, dynamic>? _toolDetails;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetails();
+  }
+
+  Future<void> _loadDetails() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final String fetchId = widget.item.tools_type_id.isNotEmpty
+          ? widget.item.tools_type_id
+          : widget.item.id;
+      final response = await ApiService().get("/api/v1/tools-types/$fetchId");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _toolDetails = data;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = "Error API: Status ${response.statusCode}";
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Erro data load: $e";
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   String _formatDate(String isoString) {
     try {
@@ -166,16 +238,23 @@ class DetailAlkerPage extends StatelessWidget {
     BuildContext context,
     String title,
     Color color,
-    List<Equipment> items,
     String type,
   ) {
-    final filteredItems = items.where((subItem) {
-      if (type == 'total') return subItem.total > 0;
-      if (type == 'good') return subItem.good > 0;
-      if (type == 'broken') return subItem.broken > 0;
-      if (type == 'borrowed') return subItem.borrowed > 0;
-      return true;
-    }).toList();
+    final int val = type == 'total'
+        ? (_toolDetails?['total'] ?? 0)
+        : type == 'good'
+            ? (_toolDetails?['baik'] ?? 0)
+            : type == 'broken'
+                ? (_toolDetails?['rusak'] ?? 0)
+                : (_toolDetails?['dipinjam'] ?? 0);
+
+    final String statusLabel = type == 'total'
+        ? 'Total'
+        : type == 'good'
+            ? 'Baik'
+            : type == 'broken'
+                ? 'Rusak'
+                : 'Pinjam';
 
     showModalBottomSheet(
       context: context,
@@ -192,7 +271,7 @@ class DetailAlkerPage extends StatelessWidget {
           ),
           padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            maxHeight: MediaQuery.of(context).size.height * 0.4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -227,130 +306,85 @@ class DetailAlkerPage extends StatelessWidget {
                 ],
               ),
               const Divider(),
-              if (filteredItems.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30),
-                  child: Center(
-                    child: Text(
-                      "La iha dadus sasán nian.",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final subItem = filteredItems[index];
-                      int val = 0;
-                      if (type == 'total') val = subItem.total;
-                      if (type == 'good') val = subItem.good;
-                      if (type == 'broken') val = subItem.broken;
-                      if (type == 'borrowed') val = subItem.borrowed;
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    "ID Sasán: ${subItem.id.isNotEmpty ? subItem.id : 'N/A'}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      // ignore: deprecated_member_use
-                                      color: color.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      "Qtd: $val",
-                                      style: TextStyle(
-                                        color: color,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.info_outline,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "Status: ${subItem.statusLabel.isNotEmpty ? subItem.statusLabel : 'Baik'} (${subItem.stockStatus.isNotEmpty ? subItem.stockStatus : 'Normal'})",
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (subItem.remarks.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.comment_outlined,
-                                        size: 14, color: Colors.grey),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        "Notas: ${subItem.remarks}",
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              if (subItem.createdAt.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.calendar_today_outlined,
-                                        size: 14, color: Colors.grey),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      "Data Kria: ${_formatDate(subItem.createdAt)}",
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "ID Sasán: ${_toolDetails?['id']?.toString() ?? widget.item.id}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              // ignore: deprecated_member_use
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              "Qtd: $val",
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Status: $statusLabel",
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_toolDetails?['created_at'] != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined,
+                                size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Data Kria: ${_formatDate(_toolDetails!['created_at'].toString())}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ],
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
         );
@@ -360,109 +394,160 @@ class DetailAlkerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final originalList =
-        item.originalItems.isNotEmpty ? item.originalItems : [item];
+    // Dynamic values from fetched items if loaded, else fallback to initial passed item values
+    final int totalVal = _isLoading ? widget.item.total : (_toolDetails?['total'] ?? 0);
+    final int goodVal = _isLoading ? widget.item.good : (_toolDetails?['baik'] ?? 0);
+    final int brokenVal = _isLoading ? widget.item.broken : (_toolDetails?['rusak'] ?? 0);
+    final int borrowedVal = _isLoading ? widget.item.borrowed : (_toolDetails?['dipinjam'] ?? 0);
+
+    final String category = widget.item.category;
+    final String toolsType = widget.item.tools_type;
+    final String unidade = widget.item.unidade;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(item.tools_name),
+        title: Text(widget.item.tools_name),
         backgroundColor: const Color(0xFFC6141F), // Mean Telkomcel
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadDetails,
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Dashboard Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard(
-                  context,
-                  "Total",
-                  item.total.toString(),
-                  Colors.blue,
-                  () => _showItemDetails(
-                    context,
-                    "Detallu Sasán Total",
-                    Colors.blue,
-                    originalList,
-                    'total',
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFFC6141F)),
+                  SizedBox(height: 15),
+                  Text(
+                    "Se loading dadus...",
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
-                ),
-                _buildStatCard(
-                  context,
-                  "Di'ak",
-                  item.good.toString(),
-                  Colors.green,
-                  () => _showItemDetails(
-                    context,
-                    "Detallu Sasán Di'ak",
-                    Colors.green,
-                    originalList,
-                    'good',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard(
-                  context,
-                  "Aat",
-                  item.broken.toString(),
-                  Colors.red,
-                  () => _showItemDetails(
-                    context,
-                    "Detallu Sasán Aat",
-                    Colors.red,
-                    originalList,
-                    'broken',
-                  ),
-                ),
-                _buildStatCard(
-                  context,
-                  "Empresta",
-                  item.borrowed.toString(),
-                  Colors.orange,
-                  () => _showItemDetails(
-                    context,
-                    "Detallu Sasán Empresta",
-                    Colors.orange,
-                    originalList,
-                    'borrowed',
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 40),
-            _buildInfoRow("Kategoria", item.category),
-            _buildInfoRow("Tipu Sasán", item.tools_type),
-            _buildInfoRow("Unidade", item.unidade),
-            const Spacer(),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6141F),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                ],
               ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.door_back_door),
-              label: const Text(
-                "Fila",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 15),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.black87, fontSize: 16),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: _loadDetails,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text("Tenta Fali"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFC6141F),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Dashboard Status
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatCard(
+                            context,
+                            "Total",
+                            totalVal.toString(),
+                            Colors.blue,
+                            () => _showItemDetails(
+                              context,
+                              "Detallu Sasán Total",
+                              Colors.blue,
+                              'total',
+                            ),
+                          ),
+                          _buildStatCard(
+                            context,
+                            "Di'ak",
+                            goodVal.toString(),
+                            Colors.green,
+                            () => _showItemDetails(
+                              context,
+                              "Detallu Sasán Di'ak",
+                              Colors.green,
+                              'good',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatCard(
+                            context,
+                            "Aat",
+                            brokenVal.toString(),
+                            Colors.red,
+                            () => _showItemDetails(
+                              context,
+                              "Detallu Sasán Aat",
+                              Colors.red,
+                              'broken',
+                            ),
+                          ),
+                          _buildStatCard(
+                            context,
+                            "Empresta",
+                            borrowedVal.toString(),
+                            Colors.orange,
+                            () => _showItemDetails(
+                              context,
+                              "Detallu Sasán Empresta",
+                              Colors.orange,
+                              'borrowed',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 40),
+                      _buildInfoRow("Kategoria", category),
+                      _buildInfoRow("Tipu Sasán", toolsType),
+                      _buildInfoRow("Unidade", unidade),
+                      const Spacer(),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFC6141F),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 55),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.door_back_door),
+                        label: const Text(
+                          "Fila",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 

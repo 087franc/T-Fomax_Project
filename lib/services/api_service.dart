@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.60.132:8008";
+  static const String baseUrl = "https://mw.telkomcel.tl/app/tfomax";
 
   // Private constructor
   ApiService._internal();
@@ -36,7 +36,7 @@ class ApiService {
         .timeout(const Duration(seconds: 30));
   }
 
-  Future<http.Response> post(String endpoint, Map<String, dynamic> body) async {
+  Future<http.Response> post(String endpoint, dynamic body) async {
     final headers = await _getHeaders();
     final url = Uri.parse("$baseUrl$endpoint");
     return await http
@@ -44,7 +44,7 @@ class ApiService {
         .timeout(const Duration(seconds: 30));
   }
 
-  Future<http.Response> patch(String endpoint, Map<String, dynamic> body) async {
+  Future<http.Response> patch(String endpoint, dynamic body) async {
     final headers = await _getHeaders();
     final url = Uri.parse("$baseUrl$endpoint");
     return await http
